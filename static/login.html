@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Voice Intake — Acces</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: #0d1117;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 20px;
+  }
+
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  .shield {
+    font-size: 52px;
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+
+  h1 {
+    color: #e6edf3;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    color: #8b949e;
+    font-size: 0.85rem;
+    margin-bottom: 32px;
+  }
+
+  label {
+    display: block;
+    text-align: left;
+    color: #8b949e;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .code-input {
+    width: 100%;
+    background: #0d1117;
+    border: 1.5px solid #30363d;
+    border-radius: 10px;
+    color: #e6edf3;
+    font-size: 1.6rem;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-align: center;
+    text-transform: uppercase;
+    padding: 16px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .code-input:focus {
+    border-color: #388bfd;
+    box-shadow: 0 0 0 3px rgba(56,139,253,0.15);
+  }
+
+  .code-input.error {
+    border-color: #f85149;
+    box-shadow: 0 0 0 3px rgba(248,81,73,0.15);
+    animation: shake 0.3s ease;
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%      { transform: translateX(-8px); }
+    75%      { transform: translateX(8px); }
+  }
+
+  .btn {
+    width: 100%;
+    background: #238636;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 14px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.03em;
+  }
+
+  .btn:hover  { background: #2ea043; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
+
+  .error-msg {
+    color: #f85149;
+    font-size: 0.85rem;
+    margin-top: 14px;
+    min-height: 20px;
+  }
+
+  .version-tag {
+    color: #484f58;
+    font-size: 0.72rem;
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+  }
+
+  .hint {
+    color: #8b949e;
+    font-size: 0.75rem;
+    margin-top: 28px;
+    line-height: 1.6;
+    border-top: 1px solid #21262d;
+    padding-top: 20px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="shield">🛡️</div>
+  <h1>Voice Intake</h1>
+  <p class="subtitle">Politia Republicii Moldova</p>
+  <p class="version-tag" id="appVersion"></p>
+
+  <form id="loginForm" onsubmit="doLogin(event)">
+    <label for="codeInput">Cod personal de acces</label>
+    <input
+      id="codeInput"
+      class="code-input"
+      type="text"
+      inputmode="text"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+      maxlength="12"
+      placeholder="••••••••"
+      autofocus
+    >
+    <button class="btn" id="submitBtn" type="submit">Intrati</button>
+    <div class="error-msg" id="errMsg"></div>
+  </form>
+
+  <div class="hint">
+    Codul de acces este disponibil la ofiterul responsabil cu acest server.<br>
+    Sesiunea dureaza 30 de zile.
+  </div>
+</div>
+
+<script>
+async function doLogin(e) {
+  e.preventDefault();
+  const input = document.getElementById('codeInput');
+  const btn   = document.getElementById('submitBtn');
+  const err   = document.getElementById('errMsg');
+  const code  = input.value.trim().toUpperCase();
+
+  if (!code) { showError('Introduceti codul de acces.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Verificare...';
+  err.textContent = '';
+  input.classList.remove('error');
+
+  try {
+    const fd = new FormData();
+    fd.append('code', code);
+    const res = await fetch('/api/login', { method: 'POST', body: fd, credentials: 'same-origin' });
+    const data = await res.json();
+
+    if (data.ok) {
+      btn.innerHTML = data.name ? ('✓ Bun venit, ' + data.name + '!') : '✓ Acces acordat';
+      btn.style.background = '#238636';
+      const next = new URLSearchParams(window.location.search).get('next') || '/';
+      setTimeout(() => { window.location.href = next; }, 400);
+    } else {
+      showError(data.error || 'Cod incorect.');
+    }
+  } catch {
+    showError('Eroare de retea. Verificati conexiunea.');
+  } finally {
+    if (btn.innerHTML !== '✓ Acces acordat') {
+      btn.disabled = false;
+      btn.innerHTML = 'Intrati';
+    }
+  }
+}
+
+// Fetch version on load
+fetch('/health').then(r=>r.json()).then(d=>{
+  const el=document.getElementById('appVersion');
+  if(el && d.version) el.textContent='v'+d.version;
+}).catch(()=>{});
+
+function showError(msg) {
+  const input = document.getElementById('codeInput');
+  const err   = document.getElementById('errMsg');
+  err.textContent = msg;
+  input.classList.add('error');
+  setTimeout(() => input.classList.remove('error'), 600);
+  input.select();
+}
+</script>
+</body>
+</html>

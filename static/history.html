@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Arhiva Dosare — Voice Intake v0.0.4</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --mai-blue:       #1a237e;
+  --mai-blue-light: #283593;
+  --mai-accent:     #e8eaf6;
+  --mai-green:      #2e7d32;
+
+  --bg:       #f0f2f5;
+  --surface:  #ffffff;
+  --surface2: #f5f6ff;
+  --border:   #c5cae9;
+  --border2:  #e0e0e0;
+  --text:     #1a1a2e;
+  --text2:    #555;
+  --text3:    #888;
+  --input-bg: #ffffff;
+  --focus-ring: rgba(26,35,126,.18);
+  --shadow: 0 1px 4px rgba(0,0,0,.1);
+  --radius: 10px;
+  --accent:  #3b82f6;
+  --green:   #22c55e;
+}
+
+html.dark {
+  --bg:       #0d0f14;
+  --surface:  #161b27;
+  --surface2: #1e2433;
+  --border:   #2e3650;
+  --border2:  #2a3145;
+  --text:     #e8eaf6;
+  --text2:    #a0a8c0;
+  --text3:    #6b778d;
+  --input-bg: #1e2433;
+  --focus-ring: rgba(121,134,203,.25);
+  --shadow: 0 2px 8px rgba(0,0,0,.4);
+  --accent:  #3b82f6;
+  --green:   #22c55e;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  min-height: 100vh;
+  transition: background .2s, color .2s;
+}
+
+/* === HEADER === */
+header {
+  background: var(--mai-blue);
+  color: #fff;
+  padding: 11px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-left { display:flex; align-items:center; gap:14px; }
+.header-logo { height:42px; width:42px; object-fit:contain; flex-shrink:0; }
+.header-text { display:flex; flex-direction:column; gap:1px; }
+.header-ministry { font-size:.68rem; opacity:.7; letter-spacing:.03em; text-transform:uppercase; }
+.header-title { font-size:.93rem; font-weight:700; }
+.header-right { display:flex; align-items:center; gap:10px; position:relative; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 6px;
+  font-size: .82rem; font-weight: 600;
+  cursor: pointer; border: none; text-decoration: none;
+  transition: background .15s, transform .1s;
+}
+.btn:active { transform: scale(.97); }
+.btn-ghost { background:rgba(255,255,255,.12); color:#fff;
+             border:1px solid rgba(255,255,255,.25); }
+.btn-ghost:hover { background:rgba(255,255,255,.22); }
+.btn-back { background:rgba(255,255,255,.9); color:var(--mai-blue); }
+.btn-back:hover { background:#fff; }
+
+/* Theme toggle */
+.theme-btn {
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:6px;
+  color:#fff;
+  padding:5px 10px;
+  font-size:.82rem;
+  cursor:pointer;
+  transition:background .15s;
+  user-select:none;
+}
+.theme-btn:hover { background:rgba(255,255,255,.22); }
+.theme-menu {
+  display:none; position:absolute; top:calc(100% + 6px); right:0;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.18);
+  min-width:140px; z-index:1000; overflow:hidden;
+}
+.theme-menu.open { display:block; }
+.theme-menu-item {
+  padding:9px 16px; font-size:.84rem; cursor:pointer;
+  color:var(--text); transition:background .12s;
+}
+.theme-menu-item:hover { background:var(--mai-accent); }
+html.dark .theme-menu-item:hover { background:var(--surface2); }
+
+/* === NAVBAR === */
+.navbar {
+  background: var(--mai-blue-light);
+  display: flex;
+  border-bottom: 2px solid var(--mai-blue);
+}
+.nav-link {
+  display:flex; align-items:center; gap:6px;
+  padding:9px 18px; font-size:.83rem; font-weight:600;
+  color:rgba(255,255,255,.65); cursor:pointer;
+  border:none; background:none;
+  transition:color .15s, background .15s;
+  text-decoration:none; white-space:nowrap;
+  border-right:1px solid rgba(255,255,255,.08);
+}
+.nav-link:hover { color:#fff; background:rgba(255,255,255,.08); }
+.nav-link.active { color:#fff; background:rgba(255,255,255,.13); }
+
+/* === MAIN === */
+main { max-width: 900px; margin: 0 auto; padding: 28px 18px; }
+
+.page-title { font-size:1.2rem; font-weight:700; margin-bottom:4px; color:var(--text); }
+.page-sub   { color:var(--text3); font-size:.84rem; margin-bottom:24px; }
+
+/* === TOOLBAR === */
+.toolbar { display:flex; gap:10px; margin-bottom:18px; align-items:center; }
+.search-wrap { position:relative; flex:1; }
+.search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%);
+                   color:var(--text3); pointer-events:none; }
+.search-input {
+  width:100%; padding:8px 12px 8px 34px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:7px; color:var(--text); font-size:.84rem; outline:none;
+}
+.search-input:focus { border-color:var(--mai-blue); }
+.search-input::placeholder { color:var(--text3); }
+
+/* === STATS === */
+.stats { display:flex; gap:14px; margin-bottom:18px; flex-wrap:wrap; }
+.stat { background:var(--surface); border:1px solid var(--border2);
+        border-radius:8px; padding:11px 16px; min-width:90px;
+        box-shadow:var(--shadow); }
+.stat-val { font-size:1.3rem; font-weight:700; color:var(--mai-blue); }
+html.dark .stat-val { color:#7986cb; }
+.stat-lbl { font-size:.72rem; color:var(--text3); margin-top:2px; }
+
+/* === EMPTY === */
+.empty {
+  text-align:center; padding:70px 20px; color:var(--text3);
+  display:none; flex-direction:column; align-items:center; gap:11px;
+}
+.empty svg { opacity:.3; }
+.empty p { font-size:.95rem; }
+
+/* === CARD === */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  margin-bottom: 11px;
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+  box-shadow: var(--shadow);
+}
+.card:hover { border-color: var(--mai-blue); }
+html.dark .card { border-color: var(--border); }
+html.dark .card:hover { border-color: #5c6bc0; }
+
+.card-header {
+  padding: 15px 18px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  position: relative;
+}
+
+.rec-icon {
+  width: 40px; height: 40px;
+  background: var(--mai-accent);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--mai-blue);
+}
+html.dark .rec-icon { background: var(--surface2); color: #7986cb; }
+
+.rec-meta { flex: 1; min-width: 0; }
+.rec-title { font-size:.9rem; font-weight:600; color:var(--text);
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rec-pills { display:flex; gap:5px; margin-top:4px; flex-wrap:wrap; }
+.pill {
+  font-size:.7rem; padding:2px 7px; border-radius:20px;
+  background:var(--surface2); color:var(--text3);
+  border:1px solid var(--border2);
+}
+.pill-type { background:rgba(59,130,246,.1); color:#3b82f6;
+             border-color:rgba(59,130,246,.25); }
+html.dark .pill-type { background:rgba(59,130,246,.15); color:#93c5fd; }
+
+.rec-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.rec-size { font-size:.75rem; color:var(--text3); }
+
+.expand-btn {
+  width:26px; height:26px; border-radius:5px;
+  background:transparent; border:1px solid var(--border);
+  color:var(--text3); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s, color .15s;
+  font-size:1rem; line-height:1;
+}
+.expand-btn:hover { background:var(--mai-accent); color:var(--mai-blue); }
+html.dark .expand-btn:hover { background:var(--surface2); color:#7986cb; }
+
+.card-body { display:none; border-top:1px solid var(--border2); }
+.card.open .card-body { display:block; }
+.card.open .expand-btn { background:var(--mai-blue); color:#fff; border-color:var(--mai-blue); }
+
+/* Transcript */
+.transcript-label {
+  padding:14px 18px 4px;
+  font-size:.7rem; font-weight:700; color:var(--text3);
+  text-transform:uppercase; letter-spacing:.08em;
+}
+.transcript-box {
+  background: var(--surface2);
+  margin: 0 18px;
+  border-radius: 7px;
+  border: 1px solid var(--border2);
+  padding: 11px 14px;
+  font-size:.82rem; line-height:1.7;
+  color: var(--text);
+  max-height: 170px; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-word;
+}
+
+/* Downloads */
+.downloads { padding:12px 18px 16px; display:flex; gap:7px; flex-wrap:wrap; }
+.dl-btn {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:7px 14px; border-radius:7px;
+  font-size:.8rem; font-weight:600;
+  text-decoration:none; border:none; cursor:pointer;
+  transition:background .15s;
+}
+.dl-audio { background:var(--mai-blue); color:#fff; }
+.dl-audio:hover { background:var(--mai-blue-light); }
+.dl-txt { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.dl-txt:hover { background:var(--border2); }
+.dl-doc { background:rgba(34,197,94,.1); color:#16a34a;
+          border:1px solid rgba(34,197,94,.25); }
+.dl-doc:hover { background:rgba(34,197,94,.18); }
+html.dark .dl-doc { color:#86efac; }
+
+/* Hover preview */
+.preview-tip {
+  position:absolute; top:calc(100% + 5px);
+  left:18px; right:18px;
+  background:var(--surface);
+  border:1px solid var(--mai-blue);
+  border-radius:7px; padding:9px 13px;
+  font-size:.78rem; line-height:1.6;
+  color:var(--text2); z-index:50;
+  pointer-events:none;
+  opacity:0; transform:translateY(-4px);
+  transition:opacity .15s, transform .15s;
+  max-height:90px; overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:4;
+  -webkit-box-orient:vertical;
+  white-space:normal;
+  word-break:break-word;
+  box-shadow:var(--shadow);
+}
+.card:not(.open):hover .preview-tip { opacity:1; transform:translateY(0); }
+
+/* Loading */
+.loading { text-align:center; padding:55px; color:var(--text3); }
+.spinner {
+  width:34px; height:34px;
+  border:3px solid var(--border);
+  border-top-color:var(--mai-blue);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  margin:0 auto 11px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="/static/logo.png" alt="MAI" class="header-logo" onerror="this.style.display='none'"/>
+    <div class="header-text">
+      <span class="header-ministry">Ministerul Afacerilor Interne — Politia RM</span>
+      <span class="header-title">Arhiva Dosare — Voice Intake v0.0.4</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="userDisplay" style="font-size:12px;color:var(--text2);padding:0 8px;border-right:1px solid var(--border1);margin-right:2px"></span>
+    <button class="theme-btn" id="themeBtn" onclick="toggleThemeMenu()">&#9728; Tema</button>
+    <div class="theme-menu" id="themeMenu">
+      <div class="theme-menu-item" onclick="setTheme('light')">&#9728; Deschis</div>
+      <div class="theme-menu-item" onclick="setTheme('dark')">&#9790; Inchis</div>
+      <div class="theme-menu-item" onclick="setTheme('system')">&#9685; Sistem</div>
+    </div>
+    <button class="btn btn-ghost" onclick="loadHistory()">&#8635; Refresh</button>
+    <a class="btn btn-back" href="/">&#8592; Inapoi</a>
+  </div>
+</header>
+
+<nav class="navbar">
+  <a class="nav-link active" href="/history">&#128196; Arhiva Dosare</a>
+  <a class="nav-link" href="/">&#127897; Inregistrare Vocala</a>
+  <a class="nav-link" href="/history#status" id="navStatus">&#9881;&#65039; Status Server</a>
+</nav>
+
+<main>
+  <div class="page-title">&#128196; Arhiva Dosare</div>
+  <div class="page-sub">Toate inregistrarile, transcrierile si documentele generate — stocate local pe server.</div>
+
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat"><div class="stat-val" id="s-count">0</div><div class="stat-lbl">Inregistrari</div></div>
+    <div class="stat"><div class="stat-val" id="s-duration">0m</div><div class="stat-lbl">Durata totala</div></div>
+    <div class="stat"><div class="stat-val" id="s-size">0 MB</div><div class="stat-lbl">Spatiu total</div></div>
+    <div class="stat"><div class="stat-val" id="s-docs">0</div><div class="stat-lbl">Documente generate</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="search-input" type="text" id="search" placeholder="Cauta in transcrieri..." oninput="filterCards()"/>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <div>Se incarca inregistrarile...</div>
+  </div>
+
+  <div id="empty" class="empty">
+    <svg width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+    </svg>
+    <p>Nicio inregistrare inca</p>
+    <small>Inregistrarile vor aparea dupa prima transcriere.</small>
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<script>
+/* === THEME === */
+(function() {
+  var saved = localStorage.getItem("vi-theme") || "system";
+  applyTheme(saved);
+})();
+
+function applyTheme(mode) {
+  var prefersDark = window.matchMedia("(prefers-color-scheme:dark)").matches;
+  var dark = mode === "dark" || (mode === "system" && prefersDark);
+  document.documentElement.classList.toggle("dark", dark);
+  var btn = document.getElementById("themeBtn");
+  if (btn) btn.textContent = dark ? "☾ Tema" : "☀ Tema";
+  localStorage.setItem("vi-theme", mode);
+}
+function setTheme(mode) { applyTheme(mode); closeThemeMenu(); }
+function toggleThemeMenu() { document.getElementById("themeMenu").classList.toggle("open"); }
+function closeThemeMenu() { var m=document.getElementById("themeMenu"); if(m) m.classList.remove("open"); }
+document.addEventListener("click", function(e) {
+  if (!e.target.closest(".header-right")) closeThemeMenu();
+});
+
+/* === HISTORY === */
+let allRecs = [];
+
+async function loadHistory() {
+  const ldiv = document.getElementById("loading");
+  ldiv.innerHTML = '<div class="spinner"></div><p style="margin-top:12px;font-size:13px">Se incarca arhiva...</p>';
+  ldiv.style.display = "block";
+  document.getElementById("list").innerHTML = "";
+  document.getElementById("empty").style.display = "none";
+  document.getElementById("stats").style.display = "none";
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch("/api/history", { signal: ctrl.signal, credentials: "same-origin" });
+    clearTimeout(timer);
+    if (res.status === 401) { location.href = "/login"; return; }
+    if (!res.ok) throw new Error("Server: " + res.status);
+    allRecs = await res.json();
+    if (!Array.isArray(allRecs)) throw new Error("Raspuns invalid de la server");
+    ldiv.style.display = "none";
+    if (!allRecs.length) { document.getElementById("empty").style.display = "flex"; return; }
+    updateStats(allRecs);
+    document.getElementById("stats").style.display = "flex";
+    renderList(allRecs);
+  } catch(e) {
+    ldiv.style.display = "none";
+    const emptyDiv = document.getElementById("empty");
+    emptyDiv.innerHTML = '<p style="color:#ef4444;text-align:center">'
+      + (e.name === "AbortError" ? "Server nu raspunde (timeout). Verificati ca aplicatia ruleaza." : "Eroare: " + e.message)
+      + '</p><button class="btn btn-ghost" style="margin-top:12px" onclick="loadHistory()">&#8635; Reincearca</button>';
+    emptyDiv.style.display = "flex";
+  }
+}
+
+function updateStats(recs) {
+  let totalSec=0, totalBytes=0, totalDocs=0;
+  recs.forEach(r => {
+    if (r.audio_duration) totalSec += r.audio_duration;
+    if (r.audio_size) totalBytes += r.audio_size;
+    totalDocs += (r.documents||[]).length;
+  });
+  document.getElementById("s-count").textContent    = recs.length;
+  document.getElementById("s-duration").textContent = fmtDurLong(totalSec);
+  document.getElementById("s-size").textContent     = fmtSize(totalBytes);
+  document.getElementById("s-docs").textContent     = totalDocs;
+}
+
+function renderList(recs) {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  if (!recs.length) { document.getElementById("empty").style.display="flex"; return; }
+  document.getElementById("empty").style.display = "none";
+  recs.forEach(r => list.appendChild(makeCard(r)));
+}
+
+function filterCards() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const filtered = q
+    ? allRecs.filter(r =>
+        (r.transcript_preview||"").toLowerCase().includes(q) ||
+        (r.rec_id||"").toLowerCase().includes(q) ||
+        (r.doc_types||[]).join(" ").toLowerCase().includes(q))
+    : allRecs;
+  renderList(filtered);
+}
+
+function makeCard(r) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.dataset.id = r.rec_id;
+  const dt   = new Date(r.timestamp);
+  const date = dt.toLocaleDateString("ro-RO", {day:"2-digit", month:"long", year:"numeric"});
+  const time = dt.toLocaleTimeString("ro-RO", {hour:"2-digit", minute:"2-digit"});
+  const isManual = r.source === "manual" || !r.audio_file;
+  const dur  = r.audio_duration ? fmtDur(r.audio_duration) : (isManual ? "text" : "—");
+  const sz   = r.audio_size ? fmtSize(r.audio_size) : (isManual ? "manual" : "—");
+  const lang = r.language === "ro" ? "🇷🇴 Romană" :
+               r.language === "ru" ? "🇷🇺 Русский" :
+               (r.language||"");
+  const types = (r.doc_types||[]).map(t =>
+    `<span class="pill pill-type">${capitalize(t)}</span>`).join("");
+  const preview = (r.transcript_preview||"").trim();
+  const docCount = (r.documents||[]).length;
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="rec-icon">
+        ${isManual
+          ? `<svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <rect x="2" y="6" width="20" height="14" rx="2"/>
+              <path d="M6 10h.01M10 10h.01M14 10h.01M6 14h.01M10 14h.01M14 14h.01"/>
+             </svg>`
+          : `<svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+             </svg>`}
+      </div>
+      <div class="rec-meta">
+        <div class="rec-title">${date} &nbsp;&middot;&nbsp; ${time}</div>
+        <div class="rec-pills">
+          <span class="pill">&#9201; ${dur}</span>
+          <span class="pill">${lang}</span>
+          ${types}
+          ${docCount ? `<span class="pill">&#128196; ${docCount} doc</span>` : ""}
+        </div>
+      </div>
+      <div class="rec-right">
+        <span class="rec-size">${sz}</span>
+        <button class="expand-btn" onclick="toggleCard(this)" title="Detalii">+</button>
+      </div>
+      ${preview ? `<div class="preview-tip">${escHtml(preview)}${preview.length>=300?"&hellip;":""}</div>` : ""}
+    </div>
+    <div class="card-body">
+      ${preview
+        ? `<div class="transcript-label">Transcriere</div>
+           <div class="transcript-box">${escHtml(preview)}${preview.length>=300?"
+
+[...] Descarcati transcrierea pentru text complet.":""}</div>`
+        : `<div class="transcript-label" style="padding-bottom:12px">Fara transcriere salvata</div>`}
+      <div class="downloads">
+        ${!isManual
+          ? `<a class="dl-btn dl-audio" href="/api/history/${r.rec_id}/audio" download>
+               <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                 <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
+               </svg> Audio</a>`
+          : `<span class="pill" style="opacity:.4;font-size:.75rem">&#9000;&#65039; Introdus manual</span>`}
+        <a class="dl-btn dl-txt" href="/api/history/${r.rec_id}/transcript" download>
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg> Transcriere</a>
+        ${(r.documents||[]).map(doc => `
+          <a class="dl-btn dl-doc" href="/api/history/${r.rec_id}/doc/${encodeURIComponent(doc)}" download>
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            ${escHtml(doc.replace(/^[A-Z]+-[A-Z0-9]+-/,"").replace(/_/g," "))}
+          </a>`).join("")}
+      </div>
+    </div>`;
+  return card;
+}
+
+function toggleCard(btn) {
+  const card = btn.closest(".card");
+  card.classList.toggle("open");
+  btn.textContent = card.classList.contains("open") ? "−" : "+";
+}
+
+/* === HELPERS === */
+function fmtDur(s) {
+  if (!s) return "—";
+  const m=Math.floor(s/60), sec=Math.round(s%60);
+  return m ? `${m}m ${sec}s` : `${sec}s`;
+}
+function fmtDurLong(s) {
+  if (!s) return "0m";
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60);
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+function fmtSize(bytes) {
+  if (!bytes) return "0 B";
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1048576) return (bytes/1024).toFixed(1) + " KB";
+  return (bytes/1048576).toFixed(1) + " MB";
+}
+function capitalize(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g," ") : "";
+}
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* === INIT === */
+window.addEventListener("load", async () => {
+  // Load current user info
+  try {
+    const r = await fetch("/api/status", { credentials: "same-origin" });
+    if (r.ok) {
+      const d = await r.json();
+      const el = document.getElementById("userDisplay");
+      if (el && d.user) {
+        el.textContent = d.user;
+        el.title = d.role || "";
+      }
+    }
+  } catch(_) {}
+  loadHistory();
+});
+</script>
+</body>
+</html>

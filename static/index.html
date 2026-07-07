@@ -1,0 +1,2644 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistem Declaratii Vocale v0.0.4 – Politia RM</title>
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* === CSS VARIABLES === */
+  :root {
+    --mai-blue:       #1a237e;
+    --mai-blue-light: #283593;
+    --mai-accent:     #e8eaf6;
+    --mai-green:      #2e7d32;
+    --mai-orange:     #f57c00;
+
+    --bg:       #f0f2f5;
+    --surface:  #ffffff;
+    --surface2: #f5f6ff;
+    --border:   #c5cae9;
+    --border2:  #e0e0e0;
+    --text:     #1a1a2e;
+    --text2:    #555;
+    --text3:    #888;
+    --input-bg: #ffffff;
+    --focus-ring: rgba(26,35,126,.18);
+    --shadow: 0 1px 4px rgba(0,0,0,.1);
+    --radius: 8px;
+    --radius-sm: 5px;
+
+    --step-active-bg: #e8eaf6;
+    --step-active-col: #1a237e;
+    --step-done-bg:   #e8f5e9;
+    --step-done-col:  #2e7d32;
+  }
+
+  html.dark {
+    --bg:       #0d0f14;
+    --surface:  #161b27;
+    --surface2: #1e2433;
+    --border:   #2e3650;
+    --border2:  #2a3145;
+    --text:     #e8eaf6;
+    --text2:    #a0a8c0;
+    --text3:    #6b778d;
+    --input-bg: #1e2433;
+    --focus-ring: rgba(121,134,203,.25);
+    --shadow: 0 2px 8px rgba(0,0,0,.4);
+    --step-active-bg: #283593;
+    --step-active-col: #c5cae9;
+    --step-done-bg:   #1b4e1c;
+    --step-done-col:  #a5d6a7;
+  }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background .2s, color .2s;
+  }
+
+  /* === HEADER === */
+  header {
+    background: var(--mai-blue);
+    color: #fff;
+    padding: 11px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .header-left  { display:flex; align-items:center; gap:14px; }
+  .header-logo  { height:50px; width:50px; object-fit:contain; flex-shrink:0; }
+  .header-text  { display:flex; flex-direction:column; gap:2px; }
+  .header-ministry { font-size:.7rem; font-weight:400; opacity:.75;
+                     letter-spacing:.03em; text-transform:uppercase; }
+  header h1     { font-size:.95rem; font-weight:700; line-height:1.2; }
+  header small  { font-size:.73rem; opacity:.55; }
+  .version-badge { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28);
+                   border-radius:4px; padding:2px 8px; font-size:.7rem; margin-left:6px; }
+  .header-right { display:flex; align-items:center; gap:10px; position:relative; }
+
+  /* === THEME TOGGLE === */
+  .theme-btn {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 6px;
+    color: #fff;
+    padding: 5px 10px;
+    font-size: .82rem;
+    cursor: pointer;
+    transition: background .15s;
+    user-select: none;
+  }
+  .theme-btn:hover { background: rgba(255,255,255,.22); }
+  .theme-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    min-width: 140px;
+    z-index: 1000;
+    overflow: hidden;
+  }
+  .theme-menu.open { display: block; }
+  .theme-menu-item {
+    padding: 9px 16px;
+    font-size: .84rem;
+    cursor: pointer;
+    color: var(--text);
+    transition: background .12s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .theme-menu-item:hover { background: var(--mai-accent); }
+  html.dark .theme-menu-item:hover { background: var(--surface2); }
+  .theme-menu-item.active { color: var(--mai-blue); font-weight: 600; }
+  html.dark .theme-menu-item.active { color: #7986cb; }
+
+  /* === NAVBAR === */
+  .navbar {
+    background: var(--mai-blue-light);
+    display: flex;
+    align-items: stretch;
+    border-bottom: 2px solid var(--mai-blue);
+    position: relative;
+  }
+  .nav-item { position: relative; }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    font-size: .84rem;
+    font-weight: 600;
+    color: rgba(255,255,255,.65);
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: color .15s, background .15s;
+    letter-spacing: .01em;
+    white-space: nowrap;
+    text-decoration: none;
+    border-right: 1px solid rgba(255,255,255,.08);
+    position: relative;
+  }
+  .nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+  .nav-link.active { color: #fff; background: rgba(255,255,255,.13); }
+  .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0; right: 0;
+    height: 2px;
+    background: #fff;
+  }
+  .nav-chevron { font-size: .65rem; opacity: .7; margin-left: 2px; }
+
+  /* Dropdown */
+  .nav-drop {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.15);
+    min-width: 220px;
+    z-index: 999;
+    overflow: hidden;
+  }
+  .nav-drop.open { display: block; }
+  .nav-drop-item {
+    padding: 10px 16px;
+    font-size: .84rem;
+    color: var(--text);
+    cursor: pointer;
+    transition: background .12s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .nav-drop-item:hover { background: var(--mai-accent); }
+  html.dark .nav-drop-item:hover { background: var(--surface2); }
+  .nav-drop-sep { height: 1px; background: var(--border2); margin: 3px 0; }
+
+  /* === STEP BAR === */
+  .steps { display:flex; background:var(--surface); border-bottom:1px solid var(--border2);
+           overflow-x:auto; }
+  .step { flex:1; min-width:90px; padding:11px 6px 9px; text-align:center;
+          font-size:.72rem; color:var(--text3); border-right:1px solid var(--border2);
+          cursor:default; transition:background .2s; }
+  .step:last-child { border-right:none; }
+  .step.active { background:var(--step-active-bg); color:var(--step-active-col);
+                 font-weight:700; }
+  .step.done   { background:var(--step-done-bg); color:var(--step-done-col); }
+  .step .num   { display:inline-flex; align-items:center; justify-content:center;
+                 width:22px; height:22px; border-radius:50%; background:var(--border2);
+                 color:#fff; font-weight:700; font-size:.78rem; margin-bottom:4px; }
+  html.dark .step .num { color: var(--text); }
+  .step.active .num { background: var(--mai-blue); color: #fff; }
+  .step.done   .num { background: var(--mai-green); color: #fff; }
+  .step-label  { display:block; }
+
+  /* === CONTAINER & CARD === */
+  .container { max-width:900px; margin:22px auto; padding:0 14px; }
+  .card { background:var(--surface); border-radius:var(--radius);
+          box-shadow:var(--shadow); padding:22px; margin-bottom:16px;
+          border:1px solid var(--border2); }
+  html.dark .card { border-color: var(--border); }
+  .card h2 { font-size:1rem; font-weight:700; color:var(--mai-blue); margin-bottom:13px; }
+  html.dark .card h2 { color: #7986cb; }
+  .card h3 { font-size:.9rem; font-weight:600; color:var(--text); margin:13px 0 7px; }
+
+  /* === TEMPLATE GRID === */
+  .template-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+                   gap:9px; margin-bottom:6px; }
+  .template-btn { border:2px solid var(--border); border-radius:6px; padding:10px 8px;
+                  text-align:center; cursor:pointer; font-size:.78rem; color:var(--text);
+                  transition:all .18s; background:var(--surface); }
+  .template-btn:hover { border-color: var(--mai-blue); background: var(--mai-accent); }
+  html.dark .template-btn:hover { background: var(--surface2); }
+  .template-btn.selected { border-color:var(--mai-blue); background:var(--mai-accent);
+                            font-weight:700; color:var(--mai-blue); }
+  html.dark .template-btn.selected { background:var(--surface2); color:#7986cb;
+                                      border-color:#5c6bc0; }
+  .template-icon { font-size:1.4rem; display:block; margin-bottom:4px; }
+  .template-desc { font-size:.67rem; color:var(--text3); margin-top:3px; display:block; }
+
+  /* === CATEGORY GROUPS === */
+  .cat-group  { margin-bottom:16px; }
+  .cat-header { display:flex; align-items:center; gap:8px; font-size:.77rem; font-weight:700;
+                color:var(--mai-blue); text-transform:uppercase; letter-spacing:.06em;
+                padding:5px 0; border-bottom:2px solid var(--mai-accent); margin-bottom:9px; }
+  html.dark .cat-header { color:#7986cb; border-color:var(--border); }
+  .cat-desc   { font-size:.7rem; font-weight:400; color:var(--text3);
+                text-transform:none; letter-spacing:0; }
+
+  /* === FORM === */
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px 15px; }
+  @media (max-width:600px) { .form-grid { grid-template-columns:1fr; } }
+  .form-group { display:flex; flex-direction:column; gap:4px; }
+  .form-group.full { grid-column:1 / -1; }
+  .form-group label { font-size:.76rem; font-weight:600; color:var(--text2); }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .875rem;
+    background: var(--input-bg);
+    color: var(--text);
+    transition: border-color .15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--mai-blue);
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .form-group textarea { min-height:78px; resize:vertical; }
+  .form-group input.prefilled,
+  .form-group textarea.prefilled {
+    border-color: #81c784;
+    background: #f9fef9;
+  }
+  html.dark .form-group input.prefilled,
+  html.dark .form-group textarea.prefilled {
+    background: #1b3a1c;
+    border-color: #388e3c;
+  }
+  .form-section {
+    grid-column: 1 / -1;
+    font-size: .74rem;
+    font-weight: 700;
+    color: var(--mai-blue);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    padding: 9px 0 4px;
+    border-bottom: 2px solid var(--mai-accent);
+    margin-top: 4px;
+  }
+  html.dark .form-section { color:#7986cb; border-color:var(--border); }
+  .form-legend {
+    grid-column: 1 / -1;
+    font-size: .72rem;
+    color: var(--text3);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    border: 1px solid #81c784;
+    background: #f9fef9;
+  }
+
+  /* === DIRECT MODE === */
+  #panelDirect { display:none; }
+  #panelDirect.active { display:block; }
+  .dz-over { border-color: var(--mai-blue) !important; background: var(--mai-accent) !important; }
+  .file-chip { display:inline-flex; align-items:center; gap:6px;
+               background:var(--mai-accent); border:1px solid var(--border);
+               border-radius:20px; padding:4px 12px; font-size:.78rem;
+               color:var(--mai-blue); margin:3px; }
+  html.dark .file-chip { background:var(--surface2); color:#7986cb; }
+  .file-chip button { background:none; border:none; cursor:pointer;
+                      color:var(--text3); font-size:.85rem; padding:0; line-height:1; }
+  .direct-type-row { display:flex; gap:10px; align-items:center;
+                     margin-bottom:17px; flex-wrap:wrap; }
+  .direct-type-row label { font-weight:600; font-size:.85rem; color:var(--text); }
+  .direct-type-row select { flex:1; min-width:220px; padding:8px 11px;
+                             border:1px solid var(--border); border-radius:var(--radius-sm);
+                             font-size:.88rem; background:var(--input-bg); color:var(--text); }
+  .direct-type-row select:focus { outline:none; border-color:var(--mai-blue);
+                                   box-shadow:0 0 0 2px var(--focus-ring); }
+  .direct-hint { font-size:.78rem; color:var(--text2); background:#e3f2fd;
+                 border-left:3px solid #1565c0; padding:8px 12px;
+                 border-radius:0 5px 5px 0; margin-bottom:15px; }
+  html.dark .direct-hint { background:#0d2a3d; color:#90caf9; }
+  #directFormContainer { margin-top:4px; }
+
+  /* === FILE MODE CARDS === */
+  .mode-card {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 15px;
+    transition: all .18s;
+    background: var(--surface);
+  }
+  .mode-card.selected {
+    border-color: var(--mai-blue);
+    background: var(--mai-accent);
+  }
+  html.dark .mode-card.selected { background: var(--surface2); border-color: #5c6bc0; }
+  .mode-card input[type=radio] { margin-top:3px; accent-color:var(--mai-blue); }
+  .mode-card-title { font-weight:700; font-size:.9rem; color:var(--mai-blue); }
+  html.dark .mode-card-title { color:#7986cb; }
+  .mode-card-desc { font-size:.76rem; color:var(--text2); margin-top:3px; }
+
+  /* === DROP ZONE === */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 34px 20px;
+    text-align: center;
+    cursor: pointer;
+    margin: 15px 0;
+    transition: all .2s;
+    background: var(--surface2);
+    color: var(--text2);
+  }
+  .drop-zone:hover { border-color: var(--mai-blue); background: var(--mai-accent); }
+  html.dark .drop-zone:hover { background: var(--surface2); }
+  .drop-zone-icon { font-size:2rem; margin-bottom:9px; }
+  .drop-zone-title { font-size:.93rem; font-weight:600; color:var(--mai-blue); }
+  html.dark .drop-zone-title { color:#7986cb; }
+  .drop-zone-sub { font-size:.77rem; color:var(--text3); margin-top:5px; }
+
+  /* === LANG BAR === */
+  .lang-bar { display:flex; gap:8px; margin-bottom:13px; }
+  .lang-btn { border:1px solid var(--border); border-radius:4px; padding:5px 13px;
+              cursor:pointer; font-size:.8rem; background:var(--surface);
+              color:var(--text); transition:all .15s; }
+  .lang-btn.active { background:var(--mai-blue); color:#fff; border-color:var(--mai-blue);
+                     font-weight:600; }
+
+  /* === RECORD === */
+  .record-area { text-align:center; margin:15px 0; }
+  #recordBtn { width:78px; height:78px; border-radius:50%; border:none;
+               background:var(--mai-blue); color:#fff; font-size:1.9rem;
+               cursor:pointer; transition:transform .15s, background .2s;
+               box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  #recordBtn.recording { background:#c62828; animation:pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(198,40,40,.6);}
+                     50%{box-shadow:0 0 0 12px rgba(198,40,40,0);} }
+  #recordBtn:disabled { background:#9e9e9e; cursor:not-allowed; animation:none; }
+  .record-status { margin-top:9px; font-size:.84rem; color:var(--text2); min-height:1.2em; }
+  #transcriptBox { width:100%; min-height:118px; border:1px solid var(--border);
+                   border-radius:6px; padding:10px; font-size:.88rem; resize:vertical;
+                   font-family:inherit; background:var(--input-bg); color:var(--text); }
+
+  /* === BILINGUAL === */
+  .bilingual-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+  @media (max-width:600px) { .bilingual-grid { grid-template-columns:1fr; } }
+  .lang-panel label { font-weight:600; font-size:.85rem; color:var(--text);
+                      display:block; margin-bottom:5px; }
+  .lang-panel textarea { width:100%; min-height:200px; border:1px solid var(--border);
+                          border-radius:6px; padding:10px; font-size:.84rem;
+                          font-family:inherit; resize:vertical;
+                          background:var(--input-bg); color:var(--text); }
+  .lang-panel textarea:focus { outline:none; border-color:var(--mai-blue);
+                                box-shadow:0 0 0 2px var(--focus-ring); }
+
+  /* === BUTTONS === */
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 20px;
+         border-radius:var(--radius-sm); border:none; cursor:pointer;
+         font-size:.87rem; font-weight:600;
+         transition:opacity .15s, transform .1s; }
+  .btn:active { transform:scale(.97); }
+  .btn:disabled { opacity:.42; cursor:not-allowed; }
+  .btn-primary { background:var(--mai-blue); color:#fff; }
+  .btn-primary:hover:not(:disabled) { background:var(--mai-blue-light); }
+  .btn-success { background:var(--mai-green); color:#fff; }
+  .btn-success:hover:not(:disabled) { background:#388e3c; }
+  .btn-warning { background:var(--mai-orange); color:#fff; }
+  .btn-warning:hover:not(:disabled) { background:#ef6c00; }
+  .btn-outline { background:transparent; border:1px solid var(--mai-blue);
+                 color:var(--mai-blue); }
+  .btn-outline:hover:not(:disabled) { background:var(--mai-accent); }
+  html.dark .btn-outline { color:#7986cb; border-color:#5c6bc0; }
+  html.dark .btn-outline:hover:not(:disabled) { background:var(--surface2); }
+  .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:15px; }
+
+  /* === SPINNER === */
+  .spinner { display:inline-block; width:15px; height:15px;
+             border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
+             border-radius:50%; animation:spin .7s linear infinite;
+             vertical-align:middle; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* === ALERTS === */
+  .alert { padding:9px 13px; border-radius:var(--radius-sm);
+           font-size:.84rem; margin-bottom:11px; }
+  .alert-info { background:#e3f2fd; color:#0d47a1; border-left:3px solid #0d47a1; }
+  .alert-err  { background:#ffebee; color:#b71c1c; border-left:3px solid #b71c1c; }
+  .alert-ok   { background:#e8f5e9; color:#1b5e20; border-left:3px solid #1b5e20; }
+  html.dark .alert-info { background:#0d2a3d; color:#90caf9; border-color:#1565c0; }
+  html.dark .alert-err  { background:#2d0a0a; color:#ef9a9a; border-color:#c62828; }
+  html.dark .alert-ok   { background:#0d2a0e; color:#a5d6a7; border-color:#2e7d32; }
+
+  /* === SPEAKER SEPARATION === */
+  .sep-wrap { margin-top:13px; border:1px solid var(--border); border-radius:6px;
+              padding:11px; background:var(--surface2); }
+  .sep-legend { font-size:.77rem; color:var(--text2); margin-bottom:9px; }
+  .sep-legend b { color:#2e7d32; }
+  .sep-legend span { color:#1565c0; }
+  .sep-confidence { font-size:.76rem; margin-bottom:9px; }
+  .conf-high   { color:#2e7d32; font-weight:700; }
+  .conf-medium { color:#f57c00; font-weight:700; }
+  .conf-low    { color:#c62828; font-weight:700; }
+  .sep-container { display:flex; flex-direction:column; gap:6px;
+                   max-height:270px; overflow-y:auto; }
+  .seg-bubble { display:flex; gap:8px; align-items:flex-start; }
+  .seg-label  { font-size:.7rem; font-weight:700; padding:3px 8px; border-radius:12px;
+                white-space:nowrap; flex-shrink:0; margin-top:3px;
+                cursor:pointer; user-select:none; border:1px solid; transition:opacity .15s; }
+  .seg-label:hover { opacity:.75; }
+  .seg-label.DECLARANT { background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7; }
+  .seg-label.OFITER    { background:#e3f2fd; color:#1565c0; border-color:#90caf9; }
+  .seg-text { font-size:.85rem; line-height:1.5; flex:1; padding:5px 9px;
+              border-radius:5px; border:1px solid var(--border2);
+              background:var(--surface); color:var(--text); }
+  .seg-bubble.OFITER .seg-text { opacity:.6; font-style:italic; background:var(--surface2); }
+  .sep-note { font-size:.75rem; color:var(--text3); margin-top:7px; }
+
+  /* === UTILS === */
+  .hidden { display:none !important; }
+  .mt8 { margin-top:8px; }
+  footer { text-align:center; color:var(--text3); font-size:.74rem; padding:18px; }
+
+  /* === MOBILE RESPONSIVE === */
+  @media (max-width:600px) {
+    .header { padding:10px 12px; }
+    .header-text .app-name { font-size:.95rem; }
+    .header-right { gap:6px; }
+    .container { padding:0 8px; margin:12px auto; }
+    #panelQuick { padding:22px 14px !important; gap:14px !important; }
+    #panelQuick button[id="quickRecBtn"] { width:130px !important; height:130px !important; }
+    .steps { padding:0 8px; gap:4px; overflow-x:auto; }
+    .step-label { font-size:.65rem; }
+    .card { padding:14px 12px; }
+    .inv-grid, #quickInventoryPanel > div { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)) !important; }
+    .gen-table { font-size:.75rem; }
+    .gen-table th, .gen-table td { padding:6px 8px; }
+    .ofiter-bar { flex-direction:column; align-items:stretch; }
+    .btn { padding:8px 14px; font-size:.82rem; }
+    .nav-tabs { overflow-x:auto; gap:4px; }
+    .nav-tab { padding:7px 10px; font-size:.8rem; white-space:nowrap; }
+    .bilingual-grid { grid-template-columns:1fr; }
+    .form-grid { grid-template-columns:1fr; }
+    footer { font-size:.68rem; padding:12px; }
+    .lang-btn { padding:5px 9px; font-size:.75rem; }
+    #quickTranscript { min-height:80px !important; font-size:.85rem; }
+    .q-status { font-size:.82rem !important; }
+    .q-timer { font-size:1.4rem !important; }
+    /* Fit table on small screens */
+    .gen-table { display:block; overflow-x:auto; white-space:nowrap; }
+  }
+  @media (max-width:380px) {
+    #panelQuick button[id="quickRecBtn"] { width:110px !important; height:110px !important; }
+  }
+  </style>
+
+</head>
+<body>
+
+<!-- MAIN APP -->
+<div id="appRoot">
+
+<header>
+  <div class="header-left">
+    <img src="/static/logo.png" alt="MAI RM" class="header-logo" onerror="this.style.display='none'"/>
+    <div class="header-text">
+      <span class="header-ministry">Ministerul Afacerilor Interne al Republicii Moldova</span>
+      <h1>Sistem Declaratii Vocale <span class="version-badge" id="versionBadge">v0.0.4</span></h1>
+      <small>Inspectoratul de Politie — Uz intern</small>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="userDisplay" style="font-size:11px;color:rgba(255,255,255,.7);padding:0 8px;border-right:1px solid rgba(255,255,255,.2);margin-right:4px"></span>
+    <button class="theme-btn" id="themeBtn" onclick="toggleThemeMenu()">&#9728; Tema</button>
+    <div class="theme-menu" id="themeMenu">
+      <div class="theme-menu-item" onclick="setTheme('light')">&#9728; Deschis</div>
+      <div class="theme-menu-item" onclick="setTheme('dark')">&#9790; Inchis</div>
+      <div class="theme-menu-item" onclick="setTheme('system')">&#9685; Sistem</div>
+    </div>
+  </div>
+</header>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-item">
+    <button class="nav-link active" id="modeTabVoice" onclick="switchMode('voice')">
+      &#127897; Inreg. Vocala
+    </button>
+  </div>
+  <div class="nav-item">
+    <button class="nav-link" id="modeTabDirect" onclick="switchMode('direct')">
+      &#128196; Generare Directa
+    </button>
+  </div>
+  <div class="nav-item">
+    <button class="nav-link" id="modeTabFiles" onclick="switchMode('files')">
+      &#128193; Analiza Fisiere
+    </button>
+  </div>
+  <div class="nav-item">
+    <button class="nav-link" onclick="toggleNavDrop('dropDocumente')">
+      &#128206; Documente <span class="nav-chevron">&#9660;</span>
+    </button>
+    <div class="nav-drop" id="dropDocumente">
+      <div class="nav-drop-item" onclick="switchMode('direct'); closeAllDrops()">
+        &#128196; Generare rapida
+      </div>
+      <div class="nav-drop-item" onclick="switchMode('voice'); closeAllDrops()">
+        &#127897; Dictare vocala
+      </div>
+      <div class="nav-drop-item" onclick="switchMode('files'); closeAllDrops()">
+        &#128193; Analiza fisiere existente
+      </div>
+    </div>
+  </div>
+  <div class="nav-item">
+    <button class="nav-link" onclick="toggleNavDrop('dropIstoric')">
+      &#128203; Istoric &amp; Status <span class="nav-chevron">&#9660;</span>
+    </button>
+    <div class="nav-drop" id="dropIstoric">
+      <a class="nav-drop-item" href="/history">&#128196; Arhiva dosare</a>
+      <div class="nav-drop-sep"></div>
+      <a class="nav-drop-item" href="/history#status">&#9881;&#65039; Status server</a>
+    </div>
+  </div>
+</nav>
+
+<!-- STEP BAR (voice mode only) -->
+<div class="steps" id="stepBar" style="display:none">
+  <div class="step active" id="step-tab-1"><span class="num" id="snum1">1</span><span class="step-label">Tip Document</span></div>
+  <div class="step" id="step-tab-2"><span class="num" id="snum2">2</span><span class="step-label">Inregistrare</span></div>
+  <div class="step" id="step-tab-3"><span class="num" id="snum3">3</span><span class="step-label">Completare Date</span></div>
+  <div class="step" id="step-tab-4"><span class="num" id="snum4">4</span><span class="step-label">Text Juridic</span></div>
+  <div class="step" id="step-tab-5"><span class="num" id="snum5">5</span><span class="step-label">Document</span></div>
+</div>
+
+<div class="container">
+
+  <!-- ══ VOICE MODE PANELS ══ -->
+  <div id="voiceMode">
+
+    <!-- ══ QUICK RECORD PANEL (default voice view) ══ -->
+    <div id="panelQuick" class="card" style="max-width:680px;width:100%;margin:0 auto;padding:32px 28px;display:flex;flex-direction:column;align-items:center;gap:20px;box-sizing:border-box">
+
+      <!-- Language selector -->
+      <div class="lang-bar" style="justify-content:center;margin:0">
+        <button class="lang-btn active" data-lang="ro" onclick="setLang(this)">RO Rom&#226;n&#259;</button>
+        <button class="lang-btn" data-lang="ru" onclick="setLang(this)">RU Rus&#259;</button>
+        <button class="lang-btn" data-lang="en" onclick="setLang(this)">EN Englez&#259;</button>
+      </div>
+
+      <!-- Big record button -->
+      <button id="quickRecBtn" onclick="toggleQuickRecord()" title="Ap&#259;sa&#355;i pentru a &#238;nregistra" data-state="idle"
+        style="width:160px;height:160px;border-radius:50%;font-size:68px;background:linear-gradient(145deg,#1a237e,#283593);color:#fff;border:5px solid rgba(255,255,255,.13);cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 10px 36px rgba(26,35,126,.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin:8px 0">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="4" width="20" height="34" rx="10" fill="white" opacity="0.92"/><path d="M12 32c0 11.046 8.954 20 20 20s20-8.954 20-20" stroke="white" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.92"/><line x1="32" y1="52" x2="32" y2="60" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.92"/><line x1="20" y1="60" x2="44" y2="60" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.92"/></svg>
+      </button>
+
+      <div class="q-status" id="quickRecStatus" style="text-align:center;font-size:.92rem;color:var(--text2)">Ap&#259;sa&#355;i pentru a &#238;nregistra</div>
+      <div class="q-timer" id="quickTimer" style="display:none;font-size:1.8rem;font-weight:700;letter-spacing:4px;font-variant-numeric:tabular-nums">00:00</div>
+
+      <!-- Transcript (hidden until recording done) -->
+      <div id="quickTranscriptWrap" style="display:none;width:100%">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:.8rem;font-weight:700;color:var(--text2)">Transcriere (editabil&#259;):</span>
+          <button class="btn btn-ghost" style="font-size:.72rem;padding:2px 8px" onclick="switchToDetailedReview()">Revizuie&#351;te manual &#8594;</button>
+        </div>
+        <textarea id="quickTranscript" placeholder="Transcrierea va ap&#259;rea automat..." oninput="updateInvFooter()" style="width:100%;min-height:110px;resize:vertical"></textarea>
+      </div>
+
+      <!-- Doc inventory (hidden until recording done) -->
+      <div id="quickInventoryPanel" style="display:none;width:100%">
+        <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border)">&#128196; Selecta&#355;i documentele de generat</div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px">
+          <label class="inv-card"><input type="checkbox" value="plangere" onchange="invChange(this)"> <span class="inv-icon">&#128196;</span> <span><b>Pl&#226;ngere Penal&#259;</b><span class="inv-desc">Victima depune pl&#226;ngere</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="declaratie" onchange="invChange(this)"> <span class="inv-icon">&#128221;</span> <span><b>Declara&#355;ie Victim&#259;</b><span class="inv-desc">Declara&#355;ie liber&#259;</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="proces_verbal" onchange="invChange(this)"> <span class="inv-icon">&#128203;</span> <span><b>Proces-Verbal Sesizare</b><span class="inv-desc">Sesizare ofi&#355;er</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="nota_explicativa" onchange="invChange(this)"> <span class="inv-icon">&#128221;</span> <span><b>Not&#259; Explicativ&#259;</b><span class="inv-desc">Persoana audiat&#259; explic&#259;</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="sesizare_penala" onchange="invChange(this)"> <span class="inv-icon">&#9878;&#65039;</span> <span><b>Sesizare Penal&#259;</b><span class="inv-desc">C&#259;tre procuratur&#259;</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="raport_go" onchange="invChange(this)"> <span class="inv-icon">&#128680;</span> <span><b>Raport GO / Apel 112</b><span class="inv-desc">Grup&#259; operativ&#259;</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="raport_pierdere" onchange="invChange(this)"> <span class="inv-icon">&#128269;</span> <span><b>Raport Pierdere</b><span class="inv-desc">Pierdere bunuri / acte</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="raport_droguri" onchange="invChange(this)"> <span class="inv-icon">&#128138;</span> <span><b>Raport Droguri</b><span class="inv-desc">Predare substan&#355;e</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="raport_transmitere" onchange="invChange(this)"> <span class="inv-icon">&#128228;</span> <span><b>Raport Transmitere</b><span class="inv-desc">Alt sector / competen&#355;&#259;</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="raport_cautare" onchange="invChange(this)"> <span class="inv-icon">&#128100;</span> <span><b>Raport C&#259;utare</b><span class="inv-desc">Anun&#355;are disp&#259;rut</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="nota_informativa" onchange="invChange(this)"> <span class="inv-icon">&#128202;</span> <span><b>Not&#259; Informativ&#259;</b><span class="inv-desc">Informare c&#259;tre &#351;ef</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="interpelare" onchange="invChange(this)"> <span class="inv-icon">&#127963;&#65039;</span> <span><b>Interpelare</b><span class="inv-desc">C&#259;tre institu&#355;ie</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="prelungire_termen" onchange="invChange(this)"> <span class="inv-icon">&#128197;</span> <span><b>Prelungire Termen</b><span class="inv-desc">Prelungire REI-z</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="decizie_clasare" onchange="invChange(this)"> <span class="inv-icon">&#128194;</span> <span><b>Decizie Clasare</b><span class="inv-desc">Rela&#355;ii civile</span></span></label>
+          <label class="inv-card"><input type="checkbox" value="incheiere" onchange="invChange(this)"> <span class="inv-icon">&#128220;</span> <span><b>&#206;ncheiere</b><span class="inv-desc">&#206;ncheiere CPP</span></span></label>
+        </div>
+
+        <div class="inv-footer" id="invFooter" style="margin-top:12px">Selecta&#355;i documentele dorite</div>
+
+        <!-- Officer select + Generate — shown only after docs selected -->
+        <div id="quickGenBar" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div class="ofiter-bar" style="margin-bottom:10px;border-radius:8px">
+            <label>&#128100; Ofi&#355;er responsabil:</label>
+            <select id="officerSelect" onchange="onOfficerSelect(this)" style="flex:1;min-width:150px;max-width:260px">
+              <option value="sandu.alexandru">Sandu Alexandru</option>
+              <option value="nikita.mocan">Nikita Mocan</option>
+              <option value="dorin.ceban">Dorin Ceban</option>
+              <option value="daniel.rosca">Daniel Rosca</option>
+              <option value="lucian.martea">Lucian Martea</option>
+              <option value="__custom__">Alt ofi&#355;er (specifica&#355;i)...</option>
+            </select>
+            <input type="text" id="officerCustomInput" placeholder="Prenume Nume" style="display:none;width:140px" oninput="_customOfficerName=this.value">
+            <span id="officerRoleSpan" style="font-size:.71rem;color:var(--text3)"></span>
+          </div>
+          <button class="btn btn-success" onclick="doQuickGenerate()" style="width:100%;font-size:.92rem;padding:11px 16px">
+            &#11123; Genereaz&#259; documente selectate (<span id="quickSelCount">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- Results section -->
+      <div id="genResultsSection" style="display:none;width:100%;border-top:1px solid var(--border);padding-top:18px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <h3 style="margin:0;font-size:.97rem">&#128203; Documente generate</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="showAddMoreDoc()" style="font-size:.78rem">+ Adaug&#259; document</button>
+            <button class="btn btn-outline" onclick="resetQuickMode()" style="font-size:.78rem">&#10006; &#206;nregistrare nou&#259;</button>
+          </div>
+        </div>
+        <div id="addMoreDocPanel" style="display:none;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px">
+          <div style="font-size:.76rem;color:var(--text2);margin-bottom:8px">Alege tip document suplimentar din acela&#351;i transcript:</div>
+          <div id="addMoreDocCards" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+        <table class="gen-table">
+          <thead><tr><th>#</th><th>Document</th><th>Ofi&#355;er</th><th>Status</th><th>Descarc&#259;</th></tr></thead>
+          <tbody id="genTableBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- STEP 1: Template selection (categorized) -->
+    <div id="panel1" class="card hidden">
+      <h2>Pasul 1 — Selectati tipul documentului</h2>
+      <div id="templateCategories">
+        <div class="alert-info alert">Se incarca sabloanele...</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn1Next" disabled onclick="goStep(2)">Continua &rarr;</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Record -->
+    <div id="panel2" class="card hidden">
+      <h2>Pasul 2 — Inregistrare declaratie</h2>
+      <div class="lang-bar">
+        <button class="lang-btn active" data-lang="ro" onclick="setLang(this)">RO Romana</button>
+        <button class="lang-btn" data-lang="ru" onclick="setLang(this)">RU Rusa</button>
+        <button class="lang-btn" data-lang="en" onclick="setLang(this)">EN Engleza</button>
+      </div>
+      <div class="alert-info alert">Apasati butonul pentru a porni inregistrarea, apasati din nou pentru a opri.</div>
+      <div class="record-area">
+        <button id="recordBtn" onclick="toggleRecord()" title="Pornire / Oprire" data-state="idle"><svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="18" y="4" width="16" height="26" rx="8" fill="white" opacity="0.9"/>
+  <path d="M10 26c0 8.837 7.163 16 16 16s16-7.163 16-16" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9"/>
+  <line x1="26" y1="42" x2="26" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>
+  <line x1="18" y1="48" x2="34" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>
+</svg></button>
+        <div class="record-status" id="recordStatus">Gata de inregistrare</div>
+      </div>
+      <h3>Transcriere (editabila):</h3>
+      <textarea id="transcriptBox" placeholder="Transcrierea va aparea automat. Puteti edita manual."></textarea>
+      <div id="transcribeAlert" class="hidden mt8"></div>
+
+      <!-- Speaker separation -->
+      <div id="speakerPanel" class="sep-wrap hidden">
+        <div class="sep-legend"><b>DECLARANT</b> — intra in document &nbsp;|&nbsp; <span>OFITER</span> — exclus &nbsp;&middot;&nbsp; Apasati eticheta pentru a corecta.</div>
+        <div id="sepConfidence" class="sep-confidence"></div>
+        <div id="sepSegments" class="sep-container"></div>
+        <div class="sep-note">Textul DECLARANT merge la extragere date.</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(1)">&larr; Inapoi</button>
+        <button class="btn btn-primary" id="btn2Extract" onclick="doExtract()" disabled>Extrage date &rarr;</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Smart form -->
+    <div id="panel3" class="card hidden">
+      <h2>Pasul 3 — Verificati si completati datele</h2>
+      <div class="alert-info alert" id="formHint">
+        Datele au fost completate automat din transcriere. Campurile cu bordura verde au fost detectate — verificati-le si completati ce lipseste.
+      </div>
+      <div class="form-legend">
+        <span class="legend-dot"></span> Camp completat automat — verificati corectitudinea
+      </div>
+      <div class="form-grid" id="caseForm"></div>
+      <div id="formAlert" class="hidden mt8"></div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(2)">&larr; Inapoi</button>
+        <button class="btn btn-warning" id="btnDevelop" onclick="commitFormAndDevelop()">Dezvolta text juridic</button>
+        <button class="btn btn-primary" onclick="commitFormAndGoStep(5)">Sari la document &rarr;</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Bilingual developed text -->
+    <div id="panel4" class="card hidden">
+      <h2>Pasul 4 — Text juridic elaborat</h2>
+      <div class="alert-info alert">Textul a fost reformulat in limbaj juridic strict. Puteti edita inainte de generare.</div>
+      <div class="bilingual-grid">
+        <div class="lang-panel">
+          <label>RO Romana — Limbaj juridic:</label>
+          <textarea id="devTextRo" placeholder="Text juridic in romana..."></textarea>
+        </div>
+        <div class="lang-panel">
+          <label>RU Rusa — Juridiceskii tekst:</label>
+          <textarea id="devTextRu" placeholder="Text in rusa..."></textarea>
+        </div>
+      </div>
+      <div id="developAlert" class="hidden mt8"></div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(3)">&larr; Inapoi</button>
+        <button class="btn btn-warning" onclick="commitFormAndDevelop()">&#8635; Regenereaza</button>
+        <button class="btn btn-success" onclick="goStep(5)">Genereaza document &rarr;</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Generate -->
+    <div id="panel5" class="card hidden">
+      <h2>Pasul 5 — Generare document</h2>
+      <div class="alert-ok alert">Datele sunt pregatite. Puteti genera documentul principal sau mai multe documente din acelasi caz.</div>
+
+      <!-- Multi-doc selector -->
+      <div style="margin:14px 0;">
+        <div style="font-size:.83rem; font-weight:700; color:#1a237e; margin-bottom:8px;">
+          Documente suplimentare (optional — genereaza mai multe din acelasi caz):
+        </div>
+        <div id="multiDocGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px;"></div>
+      </div>
+
+      <div id="generateAlert" class="hidden mt8"></div>
+      <div id="multiGenProgress" class="hidden" style="margin:8px 0; font-size:.82rem; color:#555;"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(4)">&larr; Inapoi</button>
+        <button class="btn btn-success" id="btnGenerate" onclick="doGenerate()">&#11123; Descarca document principal</button>
+        <button class="btn btn-primary" id="btnGenerateAll" onclick="doGenerateAll()" style="display:none">&#11123; Genereaza toate selectate</button>
+        <button class="btn btn-outline" onclick="resetAll()">Dosar nou</button>
+      </div>
+    </div>
+
+  </div><!-- /voiceMode -->
+
+  <!-- ══ DIRECT GENERATION MODE ══ -->
+  <div id="panelDirect" class="card">
+    <h2>&#128196; Generare Directa — fara inregistrare vocala</h2>
+    <div class="direct-hint">
+      Selectati tipul de document, completati campurile manual si descarcati documentul .docx. Nu este nevoie de inregistrare vocala sau procesare AI.
+    </div>
+
+    <div class="direct-type-row">
+      <label for="directTypeSelect">Tip document:</label>
+      <select id="directTypeSelect" onchange="renderDirectForm()">
+        <option value="">— selectati tipul —</option>
+        <optgroup label="Declaratii &amp; Sesizari">
+          <option value="plangere">Plangere Penala</option>
+          <option value="declaratie">Declaratie Victima</option>
+          <option value="proces_verbal">Proces-Verbal Sesizare</option>
+          <option value="nota_explicativa">Nota Explicativa</option>
+          <option value="sesizare_penala">Sesizare Penala</option>
+        </optgroup>
+        <optgroup label="Rapoarte GO">
+          <option value="raport_go">Raport GO / Apel 112</option>
+          <option value="raport_pierdere">Raport Pierdere</option>
+          <option value="raport_droguri">Raport Droguri / Substante</option>
+          <option value="raport_transmitere">Raport Transmitere Sector</option>
+          <option value="raport_cautare">Raport Cautare Persoana</option>
+        </optgroup>
+        <optgroup label="Note &amp; Interpelari">
+          <option value="nota_informativa">Nota Informativa</option>
+          <option value="interpelare">Interpelare Institutie</option>
+          <option value="prelungire">Prelungire Termen</option>
+          <option value="raport_serviciu">Raport de Serviciu</option>
+        </optgroup>
+        <optgroup label="Procese-Verbale Procedurale">
+          <option value="pv_retinere">PV Retinere (art. 167 CPP)</option>
+          <option value="pv_perchezitie">PV Perchezitie (art. 130 CPP)</option>
+          <option value="pv_audiere">PV Audiere</option>
+          <option value="pv_constatare">PV Constatare Infractiune</option>
+          <option value="pv_sechestru">PV Sechestru / Ridicare Bunuri</option>
+          <option value="pv_examinare">PV Examinare Loc Faptei</option>
+        </optgroup>
+        <optgroup label="Decizii &amp; Incheieri">
+          <option value="decizie_clasare">Decizie Clasare / Relatii civile</option>
+          <option value="incheiere">Incheiere</option>
+          <option value="ordonanta_refuz">Ordonanta Refuz UP (art. 274 CPP)</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div id="directFormContainer">
+      <div class="form-grid" id="directForm"></div>
+    </div>
+
+    <div id="directAlert" class="hidden mt8"></div>
+    <div class="btn-row">
+      <button class="btn btn-success" id="btnGenerateDirect" onclick="doGenerateDirect()" disabled>
+        &#11123; Descarca document .docx
+      </button>
+      <button class="btn btn-outline" onclick="resetDirect()">Resetare</button>
+    </div>
+  </div>
+
+  <!-- ══ FILE ANALYSIS PANEL ══ -->
+  <div id="panelFiles" style="display:none;">
+
+    <!-- Drop zone card -->
+    <div class="card" id="fileDropCard">
+      <h2>&#128193; Analiza Fisiere — extragere automata din documente</h2>
+
+      <!-- Mode selector -->
+      <div style="display:flex; gap:12px; margin:15px 0 4px;">
+
+        <label id="modeOptHandwriting" class="mode-card" onclick="setFileMode('handwriting')">
+          <input type="radio" name="fileMode" value="handwriting">
+          <div>
+            <div class="mode-card-title">&#9999;&#65039; Scriere de mana</div>
+            <div class="mode-card-desc">
+              Poze cu notite, procese verbale scrise manual, schite.<br>
+              <strong>Formate:</strong> JPG &middot; PNG &middot; WEBP<br>
+              <strong>Motor:</strong> GPT-4o Vision &mdash; intelege scrisul urat
+            </div>
+          </div>
+        </label>
+
+        <label id="modeOptDocument" class="mode-card selected" onclick="setFileMode('document')">
+          <input type="radio" name="fileMode" value="document" checked>
+          <div>
+            <div class="mode-card-title">&#128196; Scanat / Document</div>
+            <div class="mode-card-desc">
+              PDF-uri, DOCX, documente scanate, text simplu.<br>
+              <strong>Formate:</strong> PDF &middot; DOCX &middot; TXT &middot; imagini scanate<br>
+              <strong>Motor:</strong> pdfplumber + Tesseract OCR
+            </div>
+          </div>
+        </label>
+
+      </div>
+
+      <div id="fileDropZone" class="drop-zone"
+           ondragover="event.preventDefault(); this.classList.add('dz-over')"
+           ondragleave="this.classList.remove('dz-over')"
+           ondrop="onFileDrop(event)"
+           onclick="document.getElementById('filePickerInput').click()">
+        <div id="dzIcon" class="drop-zone-icon">&#128194;</div>
+        <div id="dzTitle" class="drop-zone-title">Trage fisierele aici sau click pentru selectie</div>
+        <div id="dzSub" class="drop-zone-sub">PDF &middot; DOCX &middot; TXT &mdash; max 10 MB per fisier</div>
+      </div>
+        <div id="dzTitle" style="font-size:.95rem; font-weight:600; color:#1a237e;">Trage fisierele aici sau click pentru selectie</div>
+        <div id="dzSub" style="font-size:.78rem; color:#888; margin-top:6px;">PDF · DOCX · TXT — max 10 MB per fisier</div>
+      </div>
+      <input type="file" id="filePickerInput" multiple accept=".pdf,.docx,.doc,.txt,.md,.csv"
+             style="display:none" onchange="onFilePick(this.files)"/>
+
+      <div id="fileList" style="margin-bottom:12px;"></div>
+
+      <div class="direct-type-row">
+        <label for="fileDocTypeSelect">Tip document de generat:</label>
+        <select id="fileDocTypeSelect">
+          <optgroup label="Declaratii &amp; Sesizari">
+            <option value="declaratie">Declaratie Victima</option>
+            <option value="plangere">Plangere Penala</option>
+            <option value="proces_verbal">Proces-Verbal</option>
+            <option value="nota_explicativa">Nota Explicativa</option>
+            <option value="sesizare_penala">Sesizare Penala</option>
+          </optgroup>
+          <optgroup label="Rapoarte GO">
+            <option value="raport_go">Raport GO / Apel 112</option>
+            <option value="raport_pierdere">Raport Pierdere</option>
+            <option value="raport_droguri">Raport Droguri</option>
+            <option value="raport_transmitere">Raport Transmitere</option>
+            <option value="raport_cautare">Raport Cautare</option>
+            <option value="raport_serviciu">Raport de Serviciu</option>
+          </optgroup>
+          <optgroup label="Note &amp; Interpelari">
+            <option value="nota_informativa">Nota Informativa</option>
+            <option value="interpelare">Interpelare</option>
+            <option value="prelungire">Prelungire Termen</option>
+          </optgroup>
+          <optgroup label="Procese-Verbale Procedurale">
+            <option value="pv_retinere">PV Retinere (art. 167 CPP)</option>
+            <option value="pv_perchezitie">PV Perchezitie (art. 130 CPP)</option>
+            <option value="pv_audiere">PV Audiere</option>
+            <option value="pv_constatare">PV Constatare Infractiune</option>
+            <option value="pv_sechestru">PV Sechestru / Ridicare Bunuri</option>
+            <option value="pv_examinare">PV Examinare Loc Faptei</option>
+          </optgroup>
+          <optgroup label="Decizii &amp; Incheieri">
+            <option value="decizie_clasare">Decizie Clasare</option>
+            <option value="incheiere">Incheiere</option>
+            <option value="ordonanta_refuz">Ordonanta Refuz UP (art. 274 CPP)</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div id="fileAnalyzeAlert" class="hidden mt8"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnAnalyzeFiles" onclick="doAnalyzeFiles()" disabled>
+          &#129302; Analizeaza cu AI
+        </button>
+        <button class="btn btn-outline" onclick="resetFiles()">Resetare</button>
+      </div>
+    </div>
+
+    <!-- Extracted text preview + form card (hidden until analysis done) -->
+    <div class="card" id="fileResultCard" style="display:none;">
+      <h2>&#10003; Text extras — verifica si editeaza</h2>
+
+      <details style="margin-bottom:16px;">
+        <summary style="cursor:pointer; font-weight:600; color:#1a237e; font-size:.88rem;">
+          Textul brut extras din fisiere &#9660;
+        </summary>
+        <pre id="fileRawText"
+             style="margin-top:10px; background:#f5f6ff; border:1px solid #c5cae9; border-radius:6px;
+                    padding:14px; font-size:.78rem; max-height:260px; overflow-y:auto; white-space:pre-wrap;"></pre>
+      </details>
+
+      <h3>Date extrase de AI — editeaza daca este nevoie</h3>
+      <div class="form-grid" id="fileForm"></div>
+
+      <div id="fileGenerateAlert" class="hidden mt8"></div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn btn-success" id="btnGenerateFromFiles" onclick="doGenerateFromFiles()">
+          &#11123; Genereaza document .docx
+        </button>
+        <button class="btn btn-outline" onclick="document.getElementById('fileResultCard').style.display='none'; document.getElementById('fileDropCard').style.display='';">
+          &#8592; Inapoi
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /panelFiles -->
+
+</div><!-- /container -->
+<footer>Voice Intake v0.0.4 &nbsp;&middot;&nbsp; Sistem intern &nbsp;&middot;&nbsp; Politia RM</footer>
+</div><!-- /appRoot -->
+
+<script>
+/* === THEME === */
+(function initTheme() {
+  var saved = localStorage.getItem("vi-theme") || "system";
+  applyTheme(saved);
+})();
+
+function applyTheme(mode) {
+  var prefersDark = window.matchMedia("(prefers-color-scheme:dark)").matches;
+  var dark = mode === "dark" || (mode === "system" && prefersDark);
+  document.documentElement.classList.toggle("dark", dark);
+  var btn = document.getElementById("themeBtn");
+  if (btn) btn.textContent = dark ? "☾ Tema" : "☀ Tema";
+  localStorage.setItem("vi-theme", mode);
+}
+
+function setTheme(mode) {
+  applyTheme(mode);
+  closeThemeMenu();
+}
+
+function toggleThemeMenu() {
+  document.getElementById("themeMenu").classList.toggle("open");
+}
+
+function closeThemeMenu() {
+  var m = document.getElementById("themeMenu");
+  if (m) m.classList.remove("open");
+}
+
+/* === NAVBAR DROPDOWNS === */
+function toggleNavDrop(id) {
+  var el = document.getElementById(id);
+  var wasOpen = el.classList.contains("open");
+  closeAllDrops();
+  if (!wasOpen) el.classList.add("open");
+}
+
+function closeAllDrops() {
+  document.querySelectorAll(".nav-drop").forEach(function(d){ d.classList.remove("open"); });
+}
+
+document.addEventListener("click", function(e) {
+  if (!e.target.closest(".nav-item") && !e.target.closest(".header-right")) {
+    closeAllDrops();
+    closeThemeMenu();
+  }
+});
+
+/* ══════════════════════════════════════════════════════
+   AUTH (disabled — open on host machine)
+══════════════════════════════════════════════════════ */
+function authFetch(url, opts = {}) { return fetch(url, opts); }
+
+(function() { loadTemplates(); })();
+
+/* ══════════════════════════════════════════════════════
+   FORM SCHEMAS  (one per document type)
+══════════════════════════════════════════════════════ */
+const FORM_SCHEMAS = {
+
+  plangere: [
+    { section: "Incident" },
+    { key:"tip_incident",        label:"Tip infractiune",       type:"select",
+      options:["furt","talharie","vatamare corporala","escrocherie","huliganism","distrugere bunuri","violenta in familie","alta infractiune"] },
+    { key:"data_incident",       label:"Data incidentului",     type:"text",  placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora incidentului",      type:"text",  placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul incidentului",    type:"text" },
+    { key:"locul_detalii",       label:"Detalii loc",           type:"text",  full:true },
+    { section: "Persoana Vatamata / Petent" },
+    { key:"victima_prenume",     label:"Prenume",               type:"text" },
+    { key:"victima_nume",        label:"Nume",                  type:"text" },
+    { key:"victima_idnp",        label:"IDNP / Buletin",        type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii",         type:"text",  placeholder:"zz.ll.aaaa" },
+    { key:"victima_telefon",     label:"Telefon",               type:"text" },
+    { key:"victima_adresa",      label:"Adresa domiciliu",      type:"text",  full:true },
+    { section: "Faptuitor" },
+    { key:"faptuitor_descriere", label:"Descriere fizica",      type:"textarea", full:true },
+    { key:"faptuitor_detalii",   label:"Alte detalii faptuitor",type:"textarea", full:true },
+    { section: "Prejudiciu si martori" },
+    { key:"bunuri_sustrase",     label:"Bunuri sustrase",       type:"textarea", full:true },
+    { key:"valoare_estimata",    label:"Valoare estimata (MDL)",type:"text" },
+    { key:"martori",             label:"Martori (nume, date contact)", type:"textarea", full:true },
+    { section: "Solicitari" },
+    { key:"masuri_solicitate",   label:"Victima solicita",      type:"textarea", full:true },
+    { key:"alte_detalii",        label:"Alte detalii relevante",type:"textarea", full:true },
+    { section: "Text principal document" },
+    { key:"text_razvtat_ro",     label:"Textul documentului (completat de ofiters sau generat AI)", type:"textarea", full:true, minH:"120px" },
+  ],
+
+  declaratie: [
+    { section: "Incident" },
+    { key:"tip_incident",        label:"Tipul evenimentului",   type:"text" },
+    { key:"data_incident",       label:"Data evenimentului",    type:"text",  placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora",                   type:"text",  placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul",                 type:"text" },
+    { key:"locul_detalii",       label:"Detalii loc",           type:"text",  full:true },
+    { section: "Declarant" },
+    { key:"victima_prenume",     label:"Prenume",               type:"text" },
+    { key:"victima_nume",        label:"Nume",                  type:"text" },
+    { key:"victima_idnp",        label:"IDNP / Buletin",        type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii",         type:"text",  placeholder:"zz.ll.aaaa" },
+    { key:"victima_telefon",     label:"Telefon",               type:"text" },
+    { key:"victima_adresa",      label:"Adresa domiciliu",      type:"text",  full:true },
+    { section: "Continut declaratie" },
+    { key:"faptuitor_descriere", label:"Descriere faptuitor",   type:"textarea", full:true },
+    { key:"bunuri_sustrase",     label:"Bunuri sustrase / prejudiciu", type:"textarea", full:true },
+    { key:"martori",             label:"Martori",               type:"textarea", full:true },
+    { key:"alte_detalii",        label:"Alte detalii",          type:"textarea", full:true },
+    { key:"masuri_solicitate",   label:"Solicita",              type:"textarea", full:true },
+    { section: "Text principal document" },
+    { key:"text_razvtat_ro",     label:"Textul declaratiei",    type:"textarea", full:true, minH:"140px" },
+  ],
+
+  proces_verbal: [
+    { section: "Date eveniment" },
+    { key:"tip_incident",        label:"Tipul sesizarii",       type:"text" },
+    { key:"data_incident",       label:"Data",                  type:"text",  placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora receptiei",         type:"text",  placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul faptei",          type:"text" },
+    { section: "Persoana vatamata" },
+    { key:"victima_prenume",     label:"Prenume",               type:"text" },
+    { key:"victima_nume",        label:"Nume",                  type:"text" },
+    { key:"victima_idnp",        label:"IDNP",                  type:"text" },
+    { key:"victima_telefon",     label:"Telefon",               type:"text" },
+    { section: "Continut" },
+    { key:"bunuri_sustrase",     label:"Bunuri sustrase",       type:"textarea", full:true },
+    { key:"valoare_estimata",    label:"Valoare estimata (MDL)",type:"text" },
+    { key:"masuri_solicitate",   label:"Masuri luate / solicitate", type:"textarea", full:true },
+    { key:"alte_detalii",        label:"Alte mentiuni",         type:"textarea", full:true },
+    { section: "Text principal document" },
+    { key:"text_razvtat_ro",     label:"Textul procesului verbal", type:"textarea", full:true, minH:"120px" },
+  ],
+
+  nota_explicativa: [
+    { section: "Fapta pentru care este audiata persoana" },
+    { key:"tip_incident",        label:"Tipul faptei",          type:"text" },
+    { key:"data_incident",       label:"Data faptei",           type:"text",  placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora faptei",            type:"text",  placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul faptei",          type:"text" },
+    { section: "Persoana audiata" },
+    { key:"victima_prenume",     label:"Prenume",               type:"text" },
+    { key:"victima_nume",        label:"Nume",                  type:"text" },
+    { key:"victima_idnp",        label:"IDNP / Buletin",        type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii",         type:"text",  placeholder:"zz.ll.aaaa" },
+    { key:"victima_telefon",     label:"Telefon",               type:"text" },
+    { key:"victima_adresa",      label:"Adresa domiciliu",      type:"text",  full:true },
+    { section: "Explicatiile persoanei" },
+    { key:"versiunea_proprie",   label:"Versiunea proprie a evenimentelor", type:"textarea", full:true, minH:"120px" },
+    { key:"justificari",         label:"Justificari / Alibi",   type:"textarea", full:true },
+    { key:"alte_detalii",        label:"Alte precizari",        type:"textarea", full:true },
+    { section: "Text principal document" },
+    { key:"text_razvtat_ro",     label:"Textul notei explicative", type:"textarea", full:true, minH:"120px" },
+  ],
+
+  sesizare_penala: [
+    { section: "Infractiunea sesizata" },
+    { key:"tip_incident",        label:"Incadrare juridica / infractiune", type:"text" },
+    { key:"data_incident",       label:"Data comiterii",        type:"text",  placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora",                   type:"text",  placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul comiterii",       type:"text" },
+    { section: "Persoana vatamata" },
+    { key:"victima_prenume",     label:"Prenume",               type:"text" },
+    { key:"victima_nume",        label:"Nume",                  type:"text" },
+    { key:"victima_idnp",        label:"IDNP",                  type:"text" },
+    { key:"victima_adresa",      label:"Adresa",                type:"text" },
+    { key:"victima_telefon",     label:"Telefon",               type:"text" },
+    { section: "Prejudiciu" },
+    { key:"bunuri_sustrase",     label:"Bunuri sustrase / daune", type:"textarea", full:true },
+    { key:"valoare_estimata",    label:"Valoare estimata (MDL)",type:"text" },
+    { section: "Temei legal si solicitari" },
+    { key:"temeiul_legal",       label:"Temei legal (art. CPP)", type:"text",  full:true, placeholder:"art. 262-263 CPP RM" },
+    { key:"masuri_solicitate",   label:"Masuri solicitate organului de urmarire", type:"textarea", full:true },
+    { section: "Text principal document" },
+    { key:"text_razvtat_ro",     label:"Textul sesizarii penale", type:"textarea", full:true, minH:"120px" },
+  ],
+
+  /* ── RAPOARTE GO ─────────────────────────────── */
+
+  raport_go: [
+    { section: "Destinatar raport" },
+    { key:"sef_prenume_nume",    label:"Numele sefului (Domnului ...)", type:"text", placeholder:"Sergiu ERHAN", full:true },
+    { key:"sef_grad",            label:"Gradul sefului",           type:"text", placeholder:"comisar-sef" },
+    { section: "Incident" },
+    { key:"tip_incident",        label:"Tipul sesizarii / faptei", type:"text" },
+    { key:"data_incident",       label:"Data evenimentului",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora evenimentului",        type:"text", placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Adresa evenimentului",     type:"text", full:true },
+    { section: "Persoana implicata" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { key:"victima_telefon",     label:"Telefon",                  type:"text" },
+    { section: "Continut raport" },
+    { key:"text_razvtat_ro",     label:"Descrierea evenimentelor, masuri intreprinse, concluzii", type:"textarea", full:true, minH:"180px" },
+    { section: "Ofiter raportant" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  raport_pierdere: [
+    { section: "Destinatar raport" },
+    { key:"sef_prenume_nume",    label:"Numele sefului",           type:"text", placeholder:"Sergiu ERHAN", full:true },
+    { key:"sef_grad",            label:"Gradul sefului",           type:"text", placeholder:"comisar-sef" },
+    { section: "Incident" },
+    { key:"tip_incident",        label:"Tipul pierderii",          type:"text", placeholder:"pierdere acte / bunuri / vehicul" },
+    { key:"data_incident",       label:"Data constatarii",         type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora",                      type:"text", placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul constatarii",        type:"text", full:true },
+    { section: "Persoana" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { key:"victima_idnp",        label:"IDNP",                     type:"text" },
+    { key:"victima_telefon",     label:"Telefon",                  type:"text" },
+    { section: "Pierdere" },
+    { key:"bunuri_sustrase",     label:"Bunuri / acte pierdute",   type:"textarea", full:true },
+    { key:"valoare_estimata",    label:"Valoare estimata (MDL)",   type:"text" },
+    { section: "Continut raport" },
+    { key:"text_razvtat_ro",     label:"Descrierea circumstantelor si masuri luate", type:"textarea", full:true, minH:"140px" },
+    { section: "Ofiter raportant" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  raport_droguri: [
+    { section: "Destinatar raport" },
+    { key:"sef_prenume_nume",    label:"Numele sefului",           type:"text", placeholder:"Sergiu ERHAN", full:true },
+    { key:"sef_grad",            label:"Gradul sefului",           type:"text", placeholder:"comisar-sef" },
+    { section: "Incident" },
+    { key:"data_incident",       label:"Data predarii",            type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora predarii",             type:"text", placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul predarii",           type:"text", full:true },
+    { section: "Persoana care preda" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { key:"victima_idnp",        label:"IDNP",                     type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii",            type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"victima_adresa",      label:"Adresa domiciliu",         type:"text", full:true },
+    { section: "Substanta" },
+    { key:"substanta_descriere", label:"Descrierea substantei (aspect, cantitate, ambalaj)", type:"textarea", full:true },
+    { section: "Continut raport" },
+    { key:"text_razvtat_ro",     label:"Descrierea circumstantelor si masuri luate", type:"textarea", full:true, minH:"140px" },
+    { section: "Ofiter raportant" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  raport_transmitere: [
+    { section: "Destinatar raport" },
+    { key:"sef_prenume_nume",    label:"Numele sefului",           type:"text", placeholder:"Sergiu ERHAN", full:true },
+    { key:"sef_grad",            label:"Gradul sefului",           type:"text", placeholder:"comisar-sef" },
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material REI",         type:"text" },
+    { key:"tip_incident",        label:"Tipul faptei",             type:"text" },
+    { key:"data_incident",       label:"Data faptei",              type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"locul_incident",      label:"Locul faptei",             type:"text", full:true },
+    { section: "Petent / Victima" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { section: "Transmitere" },
+    { key:"sector_destinatie",   label:"Sector / Institutie destinatara", type:"text", full:true, placeholder:"SP-4 al Sectiei Securitate si Ordine Publica" },
+    { section: "Continut raport" },
+    { key:"text_razvtat_ro",     label:"Motivul transmiterii si circumstante relevante", type:"textarea", full:true, minH:"120px" },
+    { section: "Ofiter raportant" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  raport_cautare: [
+    { section: "Destinatar raport" },
+    { key:"sef_prenume_nume",    label:"Numele sefului",           type:"text", placeholder:"Sergiu ERHAN", full:true },
+    { key:"sef_grad",            label:"Gradul sefului",           type:"text", placeholder:"comisar-sef" },
+    { section: "Disparitie" },
+    { key:"data_incident",       label:"Data disparitiei",         type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ultima vedere / ora",      type:"text", placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul disparitiei",        type:"text", full:true },
+    { section: "Persoana disparuta" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { key:"victima_idnp",        label:"IDNP",                     type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii",            type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"victima_adresa",      label:"Adresa domiciliu",         type:"text", full:true },
+    { key:"victima_telefon",     label:"Telefon sesizant",         type:"text" },
+    { key:"faptuitor_descriere", label:"Descriere fizica (inaltime, imbracaminte, semne distinctive)", type:"textarea", full:true },
+    { section: "Continut raport" },
+    { key:"text_razvtat_ro",     label:"Circumstantele disparitiei si masuri intreprinse", type:"textarea", full:true, minH:"140px" },
+    { section: "Ofiter raportant" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  /* ── NOTE & INTERPELARI ─────────────────────── */
+
+  nota_informativa: [
+    { section: "Sursa" },
+    { key:"sursa_informatiei",   label:"Sursa informatiei",        type:"select",
+      options:["apelul 112","adresare directa","patrulare","informator","ofiter operativ","alta sursa"] },
+    { section: "Eveniment" },
+    { key:"tip_incident",        label:"Tipul evenimentului",      type:"text" },
+    { key:"data_incident",       label:"Data evenimentului",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora evenimentului",        type:"text", placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul evenimentului",      type:"text", full:true },
+    { section: "Persoana implicata" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { section: "Continut nota" },
+    { key:"text_razvtat_ro",     label:"Descrierea detaliata a evenimentului si informatiilor", type:"textarea", full:true, minH:"180px" },
+    { section: "Ofiter" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  interpelare: [
+    { section: "Material de referinta" },
+    { key:"numar_dosar",         label:"Nr. material REI",         type:"text" },
+    { key:"data_incident",       label:"Data evenimentului",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora evenimentului",        type:"text", placeholder:"hh:mm" },
+    { key:"tip_incident",        label:"Tipul evenimentului",      type:"text" },
+    { key:"locul_incident",      label:"Locul evenimentului",      type:"text", full:true },
+    { section: "Institutia interpelata" },
+    { key:"institutie_tip",      label:"Adresat (tip)",            type:"text", placeholder:"Administrației / Directorului / Conducătorului" },
+    { key:"institutie_nume",     label:"Denumirea institutiei",    type:"text", full:true },
+    { key:"institutie_adresa",   label:"Adresa institutiei",       type:"text", full:true },
+    { section: "Solicitare" },
+    { key:"date_solicitate",     label:"Ce se solicita (documente, inregistrari, date persoane)", type:"textarea", full:true, minH:"100px" },
+    { key:"text_razvtat_ro",     label:"Detalii suplimentare / context (optional)", type:"textarea", full:true, minH:"80px" },
+    { section: "Ofiter executor" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+    { key:"ofiters_telefon",     label:"Telefon ofiter",           type:"text" },
+  ],
+
+  prelungire: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material REI-2",       type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"tip_incident",        label:"Tipul faptei",             type:"text" },
+    { key:"data_incident",       label:"Data faptei",              type:"text", placeholder:"zz.ll.aaaa" },
+    { section: "Petent" },
+    { key:"victima_prenume",     label:"Prenume petent",           type:"text" },
+    { key:"victima_nume",        label:"Nume petent",              type:"text" },
+    { section: "Motivare prelungire" },
+    { key:"text_razvtat_ro",     label:"Motivele pentru care se solicita prelungirea", type:"textarea", full:true, minH:"140px" },
+    { section: "Semnaturi" },
+    { key:"sef_prenume_nume",    label:"Numele sefului IP Botanica",type:"text", placeholder:"Sergiu ERHAN", full:true },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  /* ── DECIZII & INCHEIERI ─────────────────────── */
+
+  decizie_clasare: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material REI-2",       type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"tip_incident",        label:"Tipul faptei sesizate",     type:"text" },
+    { key:"data_incident",       label:"Data faptei",              type:"text", placeholder:"zz.ll.aaaa" },
+    { section: "Petent" },
+    { key:"victima_prenume",     label:"Prenume petent",           type:"text" },
+    { key:"victima_nume",        label:"Nume petent",              type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii petent",     type:"text", placeholder:"zz.ll.aaaa" },
+    { section: "Constatare si decizie" },
+    { key:"text_razvtat_ro",     label:"Constatarea ofiterului — analiza probelor, calificare juridica, concluzie", type:"textarea", full:true, minH:"200px" },
+    { key:"concluzie_1",         label:"Propunerea 1 (ex: Controlul interior de incetat in baza art. 275 pct.3 CPP)", type:"textarea", full:true, minH:"60px" },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  incheiere: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material / dosar",     type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"tip_incident",        label:"Obiectul cauzei",          type:"text", placeholder:"ex: furt, vatamari corporale..." },
+    { key:"data_incident",       label:"Data faptei",              type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"articol_legal",       label:"Articol CPP (temei legal)",type:"text", placeholder:"ex: 275 pct.1 CPP" },
+    { section: "Persoana vizata" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii",            type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"victima_adresa",      label:"Adresa domiciliu",         type:"text" },
+    { section: "Continut incheiere" },
+    { key:"text_razvtat_ro",     label:"Constatarile ofiterului — circumstante, probe, calificare juridica", type:"textarea", full:true, minH:"220px" },
+    { key:"dispozitiv",          label:"Dispozitiv (ce se dispune — ex: Incetarea urmaririi penale in baza art. 275 pct.1 CPP)", type:"textarea", full:true, minH:"80px" },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  // ── v0.0.4 NEW TEMPLATES ─────────────────────────────────────────────────
+
+  pv_retinere: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material / dosar",     type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"data_incident",       label:"Data retinerii",           type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora retinerii",            type:"text", placeholder:"hh:mm" },
+    { section: "Persoana retinuta" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii",            type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"victima_idnp",        label:"IDNP / Buletin",          type:"text" },
+    { key:"victima_adresa",      label:"Domiciliu",                type:"text" },
+    { key:"victima_telefon",     label:"Telefon",                  type:"text" },
+    { section: "Retinere" },
+    { key:"stare_fizica",        label:"Starea fizica la retinere",type:"text", placeholder:"ex: fara leziuni vizibile" },
+    { key:"text_razvtat_ro",     label:"Temeiurile retinerii (fapte, probe, imprejurari)", type:"textarea", full:true, minH:"180px" },
+    { key:"obiectii",            label:"Obiectii ale banuitului",  type:"textarea", full:true, minH:"60px", placeholder:"Nicio obiectie / ..." },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  pv_perchezitie: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material / dosar",     type:"text" },
+    { key:"data_inregistrare",   label:"Data ordonantei",          type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"data_incident",       label:"Data perchezitiei",        type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora inceperii",            type:"text", placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul perchezitiei",       type:"text", placeholder:"adresa / vehicul / persoana" },
+    { section: "Persoana perchezitionata" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { key:"victima_idnp",        label:"IDNP",                     type:"text" },
+    { section: "Perchezitie" },
+    { key:"martori",             label:"Martori asistenti",        type:"text", placeholder:"Numele martorilor asistenti" },
+    { key:"bunuri_sustrase",     label:"Obiecte ridicate (inventar)",type:"textarea", full:true, minH:"160px" },
+    { key:"text_razvtat_ro",     label:"Descriere detaliata a perchezitiei", type:"textarea", full:true, minH:"120px" },
+    { key:"obiectii",            label:"Obiectii",                 type:"textarea", full:true, minH:"60px", placeholder:"Nicio obiectie / ..." },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  pv_audiere: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material / dosar",     type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"data_incident",       label:"Data audierii",            type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora audierii",             type:"text", placeholder:"hh:mm" },
+    { key:"calitate_persoana",   label:"Calitatea persoanei",      type:"select", options:["banuit","martor","parte vatamata","invinuit"] },
+    { section: "Persoana audiata" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { key:"victima_data_nastere",label:"Data nasterii",            type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"victima_idnp",        label:"IDNP",                     type:"text" },
+    { key:"victima_adresa",      label:"Domiciliu",                type:"text" },
+    { key:"victima_telefon",     label:"Telefon",                  type:"text" },
+    { section: "Declaratii" },
+    { key:"text_razvtat_ro",     label:"Declaratii libere (povestire proprie)", type:"textarea", full:true, minH:"200px" },
+    { key:"versiunea_proprie",   label:"Raspunsuri la intrebari / precizari",   type:"textarea", full:true, minH:"120px" },
+    { key:"obiectii",            label:"Adaosuri / Obiectii",      type:"textarea", full:true, minH:"60px", placeholder:"Nicio obiectie / ..." },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  ordonanta_refuz: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. sesizare / material",  type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"data_incident",       label:"Data ordonantei",          type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"tip_incident",        label:"Obiectul sesizarii",       type:"text", placeholder:"ex: furt, conflict vecini..." },
+    { key:"articol_legal",       label:"Punctul art. 274 CPP (temei refuz)", type:"text", placeholder:"ex: 1 — lipsa infractiunii" },
+    { section: "Petent" },
+    { key:"victima_prenume",     label:"Prenume petent",           type:"text" },
+    { key:"victima_nume",        label:"Nume petent",              type:"text" },
+    { section: "Continut" },
+    { key:"text_razvtat_ro",     label:"Circumstantele constatate (fapte, probe, concluzie)", type:"textarea", full:true, minH:"220px" },
+    { key:"dispozitiv",          label:"Dispozitiv (ce se dispune in rezumat)", type:"textarea", full:true, minH:"80px" },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  raport_serviciu: [
+    { section: "Adresat" },
+    { key:"sef_grad",            label:"Grad sef",                 type:"text", placeholder:"ex: Comisar-sef" },
+    { key:"sef_prenume_nume",    label:"Nume sef",                 type:"text" },
+    { section: "Serviciu" },
+    { key:"data_incident",       label:"Data",                     type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Tura / Schimbul",          type:"text", placeholder:"ex: 08:00-20:00" },
+    { key:"text_razvtat_ro",     label:"Raport (descrierea activitatii / evenimentului)", type:"textarea", full:true, minH:"200px" },
+    { key:"alte_detalii",        label:"Evenimente deosebite",     type:"textarea", full:true, minH:"80px", placeholder:"Niciun eveniment deosebit / ..." },
+    { key:"masuri_solicitate",   label:"Masuri intreprinse / solicitate", type:"textarea", full:true, minH:"80px" },
+    { section: "Ofiter de serviciu" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  pv_constatare: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material / dosar",     type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"data_incident",       label:"Data constatarii",         type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora constatarii",          type:"text", placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul faptei",             type:"text" },
+    { key:"tip_incident",        label:"Tipul infractiunii",       type:"text", placeholder:"ex: furt, vatamari, huliganism..." },
+    { key:"articol_legal",       label:"Articol CP (calificare provizorie)", type:"text", placeholder:"ex: 186 alin.(2) CP RM" },
+    { section: "Persoana implicata" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { section: "Constatare" },
+    { key:"martori",             label:"Martori asistenti",        type:"text" },
+    { key:"text_razvtat_ro",     label:"Circumstantele constatate (descriere detaliata)", type:"textarea", full:true, minH:"200px" },
+    { key:"bunuri_sustrase",     label:"Probe / corpuri delicte ridicate", type:"textarea", full:true, minH:"100px" },
+    { key:"obiectii",            label:"Obiectii",                 type:"textarea", full:true, minH:"60px", placeholder:"Nicio obiectie / ..." },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  pv_sechestru: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material / dosar",     type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"data_incident",       label:"Data ridicarii",           type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora ridicarii",            type:"text", placeholder:"hh:mm" },
+    { key:"tip_incident",        label:"Cauza (obiectul materialului)", type:"text" },
+    { key:"locul_incident",      label:"Adresa ridicarii",         type:"text" },
+    { section: "Persoana" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { section: "Bunuri ridicate" },
+    { key:"martori",             label:"Martori asistenti",        type:"text" },
+    { key:"bunuri_sustrase",     label:"Inventar bunuri ridicate (descriere, cantitate, stare)", type:"textarea", full:true, minH:"180px" },
+    { key:"valoare_estimata",    label:"Valoare estimata (MDL)",   type:"text", placeholder:"ex: 5000" },
+    { key:"text_razvtat_ro",     label:"Circumstante / justificarea ridicarii", type:"textarea", full:true, minH:"120px" },
+    { key:"obiectii",            label:"Obiectii ale persoanei",   type:"textarea", full:true, minH:"60px", placeholder:"Nicio obiectie / ..." },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+  pv_examinare: [
+    { section: "Material" },
+    { key:"numar_dosar",         label:"Nr. material / dosar",     type:"text" },
+    { key:"data_inregistrare",   label:"Data inregistrarii",       type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"data_incident",       label:"Data examinarii",          type:"text", placeholder:"zz.ll.aaaa" },
+    { key:"ora_incident",        label:"Ora inceperii",            type:"text", placeholder:"hh:mm" },
+    { key:"locul_incident",      label:"Locul examinat (adresa exacta)", type:"text" },
+    { key:"tip_incident",        label:"Cauza examinarii",         type:"text", placeholder:"ex: furt din apartament, accident..." },
+    { section: "Persoana in cauza" },
+    { key:"victima_prenume",     label:"Prenume",                  type:"text" },
+    { key:"victima_nume",        label:"Nume",                     type:"text" },
+    { section: "Examinare" },
+    { key:"martori",             label:"Martori asistenti / specialist", type:"text" },
+    { key:"text_razvtat_ro",     label:"Descrierea locului examinat (stare, acces, urme, pozitie obiecte)", type:"textarea", full:true, minH:"220px" },
+    { key:"bunuri_sustrase",     label:"Probe / urme ridicate",    type:"textarea", full:true, minH:"120px" },
+    { key:"alte_detalii",        label:"Fotografii / schite efectuate", type:"textarea", full:true, minH:"60px" },
+    { key:"obiectii",            label:"Obiectii",                 type:"textarea", full:true, minH:"60px", placeholder:"Nicio obiectie / ..." },
+    { section: "Ofiter de investigatii" },
+    { key:"ofiters_prenume",     label:"Prenume ofiter",           type:"text" },
+    { key:"ofiters_nume",        label:"Nume ofiter",              type:"text" },
+  ],
+
+};
+
+/* ══════════════════════════════════════════════════════
+   TEMPLATE CATEGORIES
+══════════════════════════════════════════════════════ */
+const TEMPLATE_CATEGORIES = [
+  {
+    id:    "sesizari",
+    label: "📋 Declaratii & Sesizari",
+    desc:  "Plangeri, declaratii, procese verbale, sesizari",
+    types: ["plangere","declaratie","proces_verbal","nota_explicativa","sesizare_penala"],
+  },
+  {
+    id:    "rapoarte_go",
+    label: "📝 Rapoarte GO",
+    desc:  "Grupa Operativa, patrulare, interventie 112, cautare",
+    types: ["raport_go","raport_pierdere","raport_droguri","raport_transmitere","raport_cautare","raport_serviciu"],
+  },
+  {
+    id:    "note",
+    label: "📄 Note & Interpelari",
+    desc:  "Nota informativa, interpelare institutie, prelungire termen",
+    types: ["nota_informativa","interpelare","prelungire"],
+  },
+  {
+    id:    "pv_procedura",
+    label: "🔍 Procese-Verbale Procedurale",
+    desc:  "Retinere, perchezitie, audiere, constatare, sechestru, examinare loc faptei",
+    types: ["pv_retinere","pv_perchezitie","pv_audiere","pv_constatare","pv_sechestru","pv_examinare"],
+  },
+  {
+    id:    "decizii",
+    label: "⚖️ Decizii & Incheieri",
+    desc:  "Clasare, refuz UP, relatii civile, incheieri",
+    types: ["decizie_clasare","incheiere","ordonanta_refuz"],
+  },
+];
+
+const TEMPLATE_META = {
+  plangere:          { icon:"📋", label:"Plangere Penala",         desc:"Victima depune plangere" },
+  declaratie:        { icon:"📝", label:"Declaratie Victima",      desc:"Declaratie libera" },
+  proces_verbal:     { icon:"📄", label:"Proces-Verbal",           desc:"Sesizare ofiter" },
+  nota_explicativa:  { icon:"📓", label:"Nota Explicativa",        desc:"Persoana audiata explica" },
+  sesizare_penala:   { icon:"⚖️",  label:"Sesizare Penala",         desc:"Catre procuratura" },
+  raport_go:         { icon:"🚔", label:"Raport GO / Apel 112",    desc:"Grupa Operativa" },
+  raport_pierdere:   { icon:"🔍", label:"Raport Pierdere",         desc:"Pierdere bunuri / acte" },
+  raport_droguri:    { icon:"💊", label:"Raport Droguri",          desc:"Predare substante" },
+  raport_transmitere:{ icon:"📨", label:"Raport Transmitere",      desc:"Alt sector / competenta" },
+  raport_cautare:    { icon:"👤", label:"Raport Cautare",          desc:"Anuntare disparuta" },
+  raport_serviciu:   { icon:"📅", label:"Raport de Serviciu",      desc:"Raport zilnic / tura" },
+  nota_informativa:  { icon:"📰", label:"Nota Informativa",        desc:"Informare catre sef" },
+  interpelare:       { icon:"🏛️",  label:"Interpelare",             desc:"Catre institutie" },
+  prelungire:        { icon:"⏳", label:"Prelungire Termen",        desc:"Prelungire REI-2" },
+  decizie_clasare:   { icon:"📑", label:"Decizie Clasare",         desc:"Relatii civile / clasare" },
+  incheiere:         { icon:"⚖️",  label:"Incheiere",               desc:"Incheiere procedurala CPP" },
+  pv_retinere:       { icon:"🔒", label:"PV Retinere",             desc:"art. 167 CPP — retinere banuit" },
+  pv_perchezitie:    { icon:"🔎", label:"PV Perchezitie",          desc:"art. 130 CPP — perchezitie corporala" },
+  pv_audiere:        { icon:"🎙️",  label:"PV Audiere",              desc:"Audiere banuit / martor / parte" },
+  ordonanta_refuz:   { icon:"🚫", label:"Ordonanta Refuz UP",      desc:"art. 274 CPP — refuz pornire UP" },
+  pv_constatare:     { icon:"📍", label:"PV Constatare",           desc:"Constatare infractiune flagrant" },
+  pv_sechestru:      { icon:"📦", label:"PV Sechestru / Ridicare", desc:"art. 126-130 CPP — ridicare bunuri" },
+  pv_examinare:      { icon:"🏚️",  label:"PV Examinare Loc Faptei",desc:"art. 118-121 CPP — cercetare loc" },
+};
+
+/* ══════════════════════════════════════════════════════
+   FORM RENDER & READ
+══════════════════════════════════════════════════════ */
+function renderForm(schema, data, containerId) {
+  const container = document.getElementById(containerId || "caseForm");
+  container.innerHTML = "";
+
+  schema.forEach(field => {
+    if (field.section) {
+      const sec = document.createElement("div");
+      sec.className = "form-section";
+      sec.textContent = field.section;
+      container.appendChild(sec);
+      return;
+    }
+
+    // Auto-fill officer fields from active officer (overridable)
+    let dataVal = data[field.key] || "";
+    if (!dataVal && field.key === "ofiters_prenume") dataVal = getActiveOfficer().prenume || "";
+    if (!dataVal && field.key === "ofiters_nume")    dataVal = getActiveOfficer().nume    || "";
+    const val       = dataVal.toString();
+    const filled    = val.trim().length > 0;
+    const groupDiv  = document.createElement("div");
+    groupDiv.className = "form-group" + (field.full ? " full" : "");
+
+    const lbl = document.createElement("label");
+    lbl.setAttribute("for", (containerId||"ff") + "_" + field.key);
+    lbl.textContent = field.label;
+    groupDiv.appendChild(lbl);
+
+    let input;
+    if (field.type === "select") {
+      input = document.createElement("select");
+      input.id = (containerId||"ff") + "_" + field.key;
+      const opts = [""].concat(field.options || []);
+      opts.forEach(o => {
+        const opt = document.createElement("option");
+        opt.value = o;
+        opt.textContent = o || "— selectati —";
+        if (o === val) opt.selected = true;
+        input.appendChild(opt);
+      });
+      if (val && !field.options.includes(val)) {
+        const custom = document.createElement("option");
+        custom.value = val; custom.textContent = val; custom.selected = true;
+        input.insertBefore(custom, input.children[1]);
+      }
+    } else if (field.type === "textarea") {
+      input = document.createElement("textarea");
+      input.id = (containerId||"ff") + "_" + field.key;
+      input.value = val;
+      if (field.minH) input.style.minHeight = field.minH;
+      if (field.placeholder) input.placeholder = field.placeholder;
+    } else {
+      input = document.createElement("input");
+      input.type = "text";
+      input.id = (containerId||"ff") + "_" + field.key;
+      input.value = val;
+      if (field.placeholder) input.placeholder = field.placeholder;
+    }
+
+    if (filled) input.classList.add("prefilled");
+    input.dataset.fieldKey = field.key;
+    groupDiv.appendChild(input);
+    container.appendChild(groupDiv);
+  });
+}
+
+function readFormData() {
+  const schema = FORM_SCHEMAS[selectedTemplate] || [];
+  schema.forEach(field => {
+    if (field.section) return;
+    const el = document.getElementById("ff_" + field.key);
+    if (el) extractedData[field.key] = el.value;
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+let selectedTemplate = null;
+let selectedLang     = "ro";
+let currentStep      = 1;
+let currentMode      = "voice";
+let mediaRecorder    = null;
+let audioChunks      = [];
+let isRecording      = false;
+let extractedData    = {};
+let rawTranscript    = "";
+let declarantText    = "";
+let separationSegs   = [];
+let developedRo      = "";
+let developedRu      = "";
+let currentRecId     = "";
+let availableTemplates = [];
+
+/* ══════════════════════════════════════════════════════
+   MODE SWITCH
+══════════════════════════════════════════════════════ */
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById("modeTabVoice").classList.toggle("active", mode==="voice");
+  document.getElementById("modeTabDirect").classList.toggle("active", mode==="direct");
+  document.getElementById("modeTabFiles").classList.toggle("active", mode==="files");
+  // Step bar only shown in detailed review mode (not in quick mode)
+  document.getElementById("stepBar").style.display = "none";
+  document.getElementById("voiceMode").style.display = mode==="voice" ? "" : "none";
+  document.getElementById("panelDirect").style.display = mode==="direct" ? "block" : "none";
+  document.getElementById("panelFiles").style.display = mode==="files" ? "block" : "none";
+  if (mode === "voice") {
+    // Show quick panel, hide step panels
+    document.getElementById("panelQuick").style.display = "";
+    ["panel1","panel2","panel3","panel4","panel5"].forEach(id => {
+      document.getElementById(id)?.classList.add("hidden");
+    });
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   STEP NAVIGATION
+══════════════════════════════════════════════════════ */
+function goStep(n) {
+  if (n===2 && !selectedTemplate) { alert("Selectati un tip de document."); return; }
+  if (n>=3 && !rawTranscript.trim()) { alert("Adaugati o transcriere."); return; }
+
+  document.querySelectorAll('[id^="panel"]:not(#panelDirect)').forEach(p => p.classList.add("hidden"));
+  document.getElementById("panel"+n).classList.remove("hidden");
+  document.querySelectorAll(".step").forEach((el,i) => {
+    el.classList.remove("active","done");
+    if (i+1<n) el.classList.add("done");
+    else if (i+1===n) el.classList.add("active");
+    document.getElementById("snum"+(i+1)).textContent = (i+1<n) ? "✓" : (i+1);
+  });
+  currentStep = n;
+
+  if (n===3) renderForm(FORM_SCHEMAS[selectedTemplate]||[], extractedData, "caseForm");
+  if (n===5) renderMultiDocGrid();
+}
+
+function commitFormAndDevelop() {
+  readFormData();
+  doDevelop();
+}
+function commitFormAndGoStep(n) {
+  readFormData();
+  goStep(n);
+}
+
+/* ══════════════════════════════════════════════════════
+   TEMPLATES — CATEGORIZED
+══════════════════════════════════════════════════════ */
+async function loadTemplates() {
+  try {
+    const r    = await authFetch("/api/templates");
+    const list = await r.json();
+    availableTemplates = list;
+    const container = document.getElementById("templateCategories");
+    container.innerHTML = "";
+
+    if (!list.length) {
+      container.innerHTML='<div class="alert-err alert">Nu s-au gasit sabloane. Rulati: python template_builder.py</div>'; return;
+    }
+
+    const byId = {};
+    list.forEach(t => byId[t.id] = t);
+
+    TEMPLATE_CATEGORIES.forEach(cat => {
+      const catTypes = cat.types.filter(id => byId[id]);
+      if (!catTypes.length) return;
+
+      const grp = document.createElement("div");
+      grp.className = "cat-group";
+
+      const hdr = document.createElement("div");
+      hdr.className = "cat-header";
+      hdr.innerHTML = cat.label + '<span class="cat-desc">' + cat.desc + '</span>';
+      grp.appendChild(hdr);
+
+      const grid = document.createElement("div");
+      grid.className = "template-grid";
+
+      catTypes.forEach(id => {
+        const t = byId[id];
+        const m = TEMPLATE_META[t.id] || { icon:"📄", label:t.label, desc:"" };
+        const btn = document.createElement("div");
+        btn.className = "template-btn";
+        btn.innerHTML = '<span class="template-icon">'+m.icon+'</span>'+m.label+'<span class="template-desc">'+m.desc+'</span>';
+        btn.onclick = () => {
+          document.querySelectorAll(".template-btn").forEach(b=>b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedTemplate = t.id;
+          document.getElementById("btn1Next").disabled = false;
+        };
+        grid.appendChild(btn);
+      });
+      grp.appendChild(grid);
+      container.appendChild(grp);
+    });
+
+    // Catch any templates not in categories
+    const knownIds = new Set(TEMPLATE_CATEGORIES.flatMap(c=>c.types));
+    const extras = list.filter(t => !knownIds.has(t.id));
+    if (extras.length) {
+      const grp = document.createElement("div");
+      grp.className = "cat-group";
+      const hdr = document.createElement("div");
+      hdr.className = "cat-header";
+      hdr.innerHTML = '📁 Alte sabloane <span class="cat-desc">sabloane personalizate</span>';
+      grp.appendChild(hdr);
+      const grid = document.createElement("div");
+      grid.className = "template-grid";
+      extras.forEach(t => {
+        const btn = document.createElement("div");
+        btn.className = "template-btn";
+        btn.innerHTML = '<span class="template-icon">📄</span>'+t.label+'<span class="template-desc"></span>';
+        btn.onclick = () => {
+          document.querySelectorAll(".template-btn").forEach(b=>b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedTemplate = t.id;
+          document.getElementById("btn1Next").disabled = false;
+        };
+        grid.appendChild(btn);
+      });
+      grp.appendChild(grid);
+      container.appendChild(grp);
+    }
+
+  } catch(e) {
+    document.getElementById("templateCategories").innerHTML='<div class="alert-err alert">Eroare: '+e.message+'</div>';
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   DIRECT GENERATION
+══════════════════════════════════════════════════════ */
+function renderDirectForm() {
+  const docType = document.getElementById("directTypeSelect").value;
+  const schema  = FORM_SCHEMAS[docType] || [];
+  renderForm(schema, {}, "directForm");
+  document.getElementById("btnGenerateDirect").disabled = !docType;
+}
+
+async function doGenerateDirect() {
+  const docType = document.getElementById("directTypeSelect").value;
+  if (!docType) { alert("Selectati un tip de document."); return; }
+
+  const schema = FORM_SCHEMAS[docType] || [];
+  const data   = {};
+  schema.forEach(field => {
+    if (field.section) return;
+    const el = document.getElementById("directForm_" + field.key);
+    if (el) data[field.key] = el.value;
+  });
+
+  // text_razvtat_ro is the main body text — pass it separately too
+  const textRo = data["text_razvtat_ro"] || "";
+
+  const btn = document.getElementById("btnGenerateDirect");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Se genereaza...';
+
+  // Archive the transcript first (even for manual entry), get a rec_id
+  let directRecId = "";
+  try {
+    const transcriptText = textRo || Object.entries(data).map(([k,v])=>k+": "+v).join("\n");
+    const afd = new FormData();
+    afd.append("transcript", transcriptText);
+    afd.append("language", "ro");
+    const ar = await authFetch("/api/archive-transcript", {method:"POST", body:afd});
+    if (ar.ok) { const ad = await ar.json(); directRecId = ad.rec_id || ""; }
+  } catch(_) {}
+
+  const fd = new FormData();
+  fd.append("template", docType);
+  fd.append("data", JSON.stringify(data));
+  fd.append("text_razvtat_ro", textRo);
+  fd.append("rec_id", directRecId);
+
+  try {
+    const r = await authFetch("/api/generate", { method:"POST", body:fd });
+    if (!r.ok) {
+      const ct = r.headers.get("content-type")||"";
+      let msg = r.statusText || ("HTTP "+r.status);
+      if (ct.includes("json")) { try { const e=await r.json(); msg=e.detail||msg; } catch(_){} }
+      else if (r.status===401) { msg="Sesiune expirata — reautentificati-va."; }
+      else if (r.status===404) { msg="Sablon lipsa pentru acest tip de document. Rulati update_to_v004.bat."; }
+      else { msg="Eroare server ("+r.status+"). Verificati ca serverul ruleaza."; }
+      throw new Error(msg);
+    }
+    const blob = await r.blob();
+    const cd   = r.headers.get("content-disposition")||"";
+    const fn   = (cd.match(/filename[^;=\n]*=([^;\n]*)/)?.[1] || (docType+".docx")).replace(/^["'\s]+|["'\s]+$/g,"");
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a"); a.href=url; a.download=fn; a.click();
+    URL.revokeObjectURL(url);
+    showAlert("directAlert","ok","Document generat cu succes: "+fn);
+  } catch(e) {
+    showAlert("directAlert","err","Eroare generare: "+e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#11123; Descarca document .docx';
+  }
+}
+
+function resetDirect() {
+  document.getElementById("directTypeSelect").value = "";
+  document.getElementById("directForm").innerHTML = "";
+  document.getElementById("btnGenerateDirect").disabled = true;
+  hideAlert("directAlert");
+}
+
+/* ══════════════════════════════════════════════════════
+   LANGUAGE
+══════════════════════════════════════════════════════ */
+function setLang(btn) {
+  document.querySelectorAll(".lang-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedLang = btn.dataset.lang;
+}
+
+/* ══════════════════════════════════════════════════════
+   RECORDING
+══════════════════════════════════════════════════════ */
+async function toggleRecord() { if (!isRecording) await startRecording(); else stopRecording(); }
+
+async function startRecording() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showAlert("transcribeAlert","Microfonul nu e accesibil pe HTTP. Folositi localhost sau HTTPS.","danger");
+      return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioChunks=[];
+    const opts = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?{mimeType:"audio/webm;codecs=opus"}:{};
+    mediaRecorder = new MediaRecorder(stream,opts);
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = sendAudio;
+    mediaRecorder.start(200);
+    isRecording=true;
+    document.getElementById("recordBtn").classList.add("recording");
+    document.getElementById("recordBtn").innerHTML=`<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="24" height="24" rx="4" fill="white" opacity="0.92"/></svg>`;
+    document.getElementById("recordStatus").textContent="Inregistrare in curs...";
+  } catch(e) { showAlert("transcribeAlert","err","Nu s-a putut accesa microfonul: "+e.message); }
+}
+
+function stopRecording() {
+  if (mediaRecorder&&isRecording) {
+    mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+    isRecording=false;
+    document.getElementById("recordBtn").classList.remove("recording");
+    document.getElementById("recordBtn").innerHTML="⏳";
+    document.getElementById("recordBtn").disabled=true;
+    document.getElementById("recordStatus").textContent="Se proceseaza...";
+  }
+}
+
+async function sendAudio() {
+  const blob=new Blob(audioChunks,{type:"audio/webm"});
+  if (blob.size < 1000) {
+    showAlert("transcribeAlert","err","Inregistrare prea scurta sau microfonul nu a functionat. Incercati din nou.");
+    document.getElementById("recordStatus").textContent="Gata de inregistrare";
+    document.getElementById("recordBtn").disabled=false;
+    document.getElementById("recordBtn").innerHTML=`<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="18" y="4" width="16" height="26" rx="8" fill="white" opacity="0.9"/><path d="M10 26c0 8.837 7.163 16 16 16s16-7.163 16-16" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9"/><line x1="26" y1="42" x2="26" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/><line x1="18" y1="48" x2="34" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/></svg>`;
+    return;
+  }
+  const fd=new FormData(); fd.append("audio",blob,"declaratie.webm"); fd.append("language",selectedLang);
+  try {
+    const r=await authFetch("/api/transcribe",{method:"POST",body:fd});
+    let d;
+    try { d=await r.json(); } catch(_){ throw new Error("Eroare server ("+r.status+"). Verificati cheia OPENAI_API_KEY in .env"); }
+    if (!r.ok) throw new Error(d.detail||r.statusText);
+    rawTranscript=d.text||"";
+    currentRecId=d.rec_id||"";
+    document.getElementById("transcriptBox").value=rawTranscript;
+    document.getElementById("recordStatus").textContent="Transcriere completa. Se analizeaza vorbitorii...";
+    if (rawTranscript.trim()) await doSeparate();
+  } catch(e) {
+    showAlert("transcribeAlert","err","Eroare transcriere: "+e.message);
+    document.getElementById("recordStatus").textContent="Eroare.";
+  } finally {
+    document.getElementById("recordBtn").disabled=false;
+    document.getElementById("recordBtn").innerHTML=`<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="18" y="4" width="16" height="26" rx="8" fill="white" opacity="0.9"/><path d="M10 26c0 8.837 7.163 16 16 16s16-7.163 16-16" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9"/><line x1="26" y1="42" x2="26" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/><line x1="18" y1="48" x2="34" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/></svg>`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("transcriptBox").addEventListener("input",function(){
+    rawTranscript=this.value; declarantText=""; separationSegs=[];
+    document.getElementById("speakerPanel").classList.add("hidden");
+    document.getElementById("btn2Extract").disabled=!this.value.trim();
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   SPEAKER SEPARATION
+══════════════════════════════════════════════════════ */
+async function doSeparate() {
+  const transcript=document.getElementById("transcriptBox").value.trim();
+  if (!transcript) return;
+  document.getElementById("btn2Extract").disabled=true;
+  document.getElementById("speakerPanel").classList.add("hidden");
+  const fd=new FormData(); fd.append("transcript",transcript);
+  try {
+    const r=await authFetch("/api/separate",{method:"POST",body:fd});
+    const d=await r.json();
+    if (!r.ok) throw new Error(d.detail||r.statusText);
+    separationSegs=d.segments||[]; declarantText=d.declarant_text||transcript;
+    renderSeparation(d);
+    document.getElementById("speakerPanel").classList.remove("hidden");
+    document.getElementById("recordStatus").textContent="Transcriere + separare vorbitori completa.";
+  } catch(_) {
+    declarantText=transcript; separationSegs=[{speaker:"DECLARANT",text:transcript}];
+    document.getElementById("recordStatus").textContent="Transcriere completa.";
+  } finally {
+    document.getElementById("btn2Extract").disabled=!transcript;
+  }
+}
+
+function renderSeparation(data) {
+  const segs=data.segments||[]; const conf=data.confidence||"?";
+  const cc=conf==="high"?"conf-high":conf==="medium"?"conf-medium":"conf-low";
+  document.getElementById("sepConfidence").innerHTML=
+    'Acuratete: <span class="'+cc+'">'+conf.toUpperCase()+'</span> &nbsp;&middot;&nbsp; '+
+    'Declarant: <b>'+segs.filter(s=>s.speaker==="DECLARANT").length+' segm.</b> &nbsp;&middot;&nbsp; '+
+    'Ofiter: <b>'+segs.filter(s=>s.speaker==="OFITER").length+' segm.</b>';
+  const c=document.getElementById("sepSegments"); c.innerHTML="";
+  segs.forEach((seg,idx)=>{
+    const lbl=seg.speaker==="DECLARANT"?"DECLARANT":"OFITER";
+    const div=document.createElement("div"); div.className="seg-bubble "+lbl;
+    div.innerHTML='<span class="seg-label '+lbl+'" onclick="toggleSegLabel('+idx+')">'+(lbl==="DECLARANT"?"🟢":"🔴")+" "+lbl+'</span>'+
+                  '<span class="seg-text">'+escHtml(seg.text)+'</span>';
+    c.appendChild(div);
+  });
+}
+
+function toggleSegLabel(idx) {
+  if (!separationSegs[idx]) return;
+  separationSegs[idx].speaker=separationSegs[idx].speaker==="DECLARANT"?"OFITER":"DECLARANT";
+  declarantText=separationSegs.filter(s=>s.speaker==="DECLARANT").map(s=>s.text).join(" ");
+  renderSeparation({segments:separationSegs,confidence:"high"});
+}
+
+/* ══════════════════════════════════════════════════════
+   EXTRACT
+══════════════════════════════════════════════════════ */
+async function doExtract() {
+  rawTranscript=document.getElementById("transcriptBox").value;
+  if (!rawTranscript.trim()) { alert("Transcrierea este goala."); return; }
+
+  const btn=document.getElementById("btn2Extract");
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Se extrag datele...';
+
+  const text=declarantText.trim()||rawTranscript;
+  const fd=new FormData(); fd.append("transcript",text); fd.append("doc_type",selectedTemplate||"declaratie");
+
+  try {
+    const r=await authFetch("/api/extract",{method:"POST",body:fd});
+    const d=await r.json();
+    if (!r.ok) throw new Error(d.detail||r.statusText);
+    extractedData=d;
+    goStep(3);
+  } catch(e) { showAlert("transcribeAlert","err","Eroare extragere: "+e.message); }
+  finally { btn.disabled=false; btn.innerHTML="Extrage date &rarr;"; }
+}
+
+
+
+/* === UTILS === */
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = "alert alert-" + (type === "err" ? "err" : type === "ok" ? "ok" : "info");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+}
+function hideAlert(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.add("hidden"); el.textContent = ""; }
+}
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* === VOICE FLOW — STEP 5 === */
+function renderMultiDocGrid() {
+  const grid = document.getElementById("multiDocGrid");
+  if (!grid || !selectedTemplate) return;
+  const others = availableTemplates.filter(t => t !== selectedTemplate);
+  if (!others.length) { grid.innerHTML = ""; return; }
+  grid.innerHTML = others.map(t => {
+    const meta = TEMPLATE_META[t] || {};
+    return `<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;
+              border:1px solid var(--border);border-radius:6px;cursor:pointer;
+              font-size:.82rem;background:var(--surface);color:var(--text);
+              transition:background .15s;">
+      <input type="checkbox" value="${escHtml(t)}" style="accent-color:var(--mai-blue);">
+      <span>${escHtml(meta.icon||"")} ${escHtml(meta.label||t)}</span>
+    </label>`;
+  }).join("");
+  grid.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const any = !!grid.querySelector("input:checked");
+      document.getElementById("btnGenerateAll").style.display = any ? "" : "none";
+    });
+  });
+}
+
+async function doGenerate() {
+  if (!selectedTemplate) { alert("Selectati un sablon."); return; }
+  const btn = document.getElementById("btnGenerate");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Se genereaza...';
+  hideAlert("generateAlert");
+  const fd = new FormData();
+  fd.append("template", selectedTemplate);
+  fd.append("data", JSON.stringify(extractedData));
+  fd.append("text_razvtat_ro", developedRo);
+  fd.append("text_razvtat_ru", developedRu);
+  fd.append("rec_id", currentRecId);
+  try {
+    const r = await authFetch("/api/generate", { method:"POST", body:fd });
+    if (!r.ok) {
+      const ct2 = r.headers.get("content-type")||"";
+      let msg2 = "HTTP "+r.status;
+      if (ct2.includes("json")) { try { const e=await r.json(); msg2=e.detail||msg2; } catch(_){} }
+      else if (r.status===404) { msg2="Sablon lipsa — rulati update_to_v004.bat"; }
+      else if (r.status===401) { msg2="Sesiune expirata"; }
+      throw new Error(msg2);
+    }
+    const blob = await r.blob();
+    const cd   = r.headers.get("content-disposition")||"";
+    const fn   = (cd.match(/filename[^;=\n]*=([^;\n]*)/)?.[1] || (selectedTemplate+".docx")).replace(/^["'\s]+|["'\s]+$/g,"");
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a"); a.href=url; a.download=fn; a.click();
+    URL.revokeObjectURL(url);
+    showAlert("generateAlert","ok","Document generat: "+fn);
+  } catch(e) {
+    showAlert("generateAlert","err","Eroare: "+e.message);
+  } finally {
+    btn.disabled=false; btn.innerHTML="&#11123; Descarca document principal";
+  }
+}
+
+async function doGenerateAll() {
+  const checked = Array.from(
+    document.querySelectorAll("#multiDocGrid input[type=checkbox]:checked")
+  ).map(cb => cb.value);
+  if (!checked.length) return;
+  const progress = document.getElementById("multiGenProgress");
+  progress.classList.remove("hidden");
+  hideAlert("generateAlert");
+  const allTemplates = [selectedTemplate, ...checked];
+  let ok = 0, fail = 0;
+  for (const tpl of allTemplates) {
+    progress.textContent = `Generare ${ok+fail+1}/${allTemplates.length}: ${tpl}...`;
+    const fd = new FormData();
+    fd.append("template", tpl);
+    fd.append("data", JSON.stringify(extractedData));
+    fd.append("text_razvtat_ro", developedRo);
+    fd.append("text_razvtat_ru", developedRu);
+    fd.append("rec_id", currentRecId);
+    try {
+      const r = await authFetch("/api/generate", { method:"POST", body:fd });
+      if (!r.ok) throw new Error((await r.json()).detail||r.statusText);
+      const blob = await r.blob();
+      const cd   = r.headers.get("content-disposition")||"";
+      const fn   = (cd.match(/filename[^;=\n]*=([^;\n]*)/)?.[1] || (tpl+".docx")).replace(/^["'\s]+|["'\s]+$/g,"");
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a"); a.href=url; a.download=fn; a.click();
+      URL.revokeObjectURL(url);
+      ok++;
+    } catch(e) { fail++; }
+    await new Promise(res=>setTimeout(res,400));
+  }
+  progress.classList.add("hidden");
+  showAlert("generateAlert", fail===0?"ok":"err",
+    `Gata: ${ok} document(e) generate${fail?" — "+fail+" erori":""}.`);
+}
+
+function resetAll() {
+  selectedTemplate=null; extractedData={}; rawTranscript="";
+  declarantText=""; separationSegs=[]; developedRo=""; developedRu="";
+  currentRecId="";
+  document.getElementById("transcriptBox").value="";
+  document.getElementById("btn1Next").disabled=true;
+  document.getElementById("btn2Extract").disabled=true;
+  document.querySelectorAll(".template-btn").forEach(b=>b.classList.remove("selected"));
+  ["transcribeAlert","formAlert","developAlert","generateAlert"].forEach(hideAlert);
+  document.getElementById("speakerPanel").classList.add("hidden");
+  document.getElementById("multiDocGrid").innerHTML="";
+  document.getElementById("btnGenerateAll").style.display="none";
+  // Return to quick mode
+  document.getElementById("stepBar").style.display = "none";
+  ["panel1","panel2","panel3","panel4","panel5"].forEach(id => {
+    document.getElementById(id)?.classList.add("hidden");
+  });
+  document.getElementById("panelQuick").style.display = "";
+}
+
+/* === FILE MODE === */
+let currentFileMode = "document";
+let uploadedFiles   = [];
+
+function setFileMode(m) {
+  currentFileMode = m;
+  const hw = document.getElementById("modeOptHandwriting");
+  const dc = document.getElementById("modeOptDocument");
+  hw.classList.toggle("selected", m === "handwriting");
+  dc.classList.toggle("selected", m === "document");
+  if (m === "handwriting") {
+    hw.querySelector("input").checked = true;
+    document.getElementById("filePickerInput").accept = ".jpg,.jpeg,.png,.webp,.gif";
+    document.getElementById("dzSub").textContent = "JPG · PNG · WEBP — max 10 MB per fisier";
+  } else {
+    dc.querySelector("input").checked = true;
+    document.getElementById("filePickerInput").accept = ".pdf,.docx,.doc,.txt,.md,.csv";
+    document.getElementById("dzSub").textContent = "PDF · DOCX · TXT — max 10 MB per fisier";
+  }
+}
+
+function onFileDrop(event) {
+  event.preventDefault();
+  document.getElementById("fileDropZone").classList.remove("dz-over");
+  onFilePick(event.dataTransfer.files);
+}
+
+function onFilePick(files) {
+  uploadedFiles = Array.from(files);
+  const list = document.getElementById("fileList");
+  list.innerHTML = uploadedFiles.map((f,i) =>
+    `<span class="file-chip">${escHtml(f.name)}
+       <button onclick="removeFile(${i})" title="Sterge">&#10005;</button>
+     </span>`
+  ).join("");
+  document.getElementById("btnAnalyzeFiles").disabled = !uploadedFiles.length;
+}
+
+function removeFile(idx) {
+  uploadedFiles.splice(idx, 1);
+  onFilePick(uploadedFiles);
+}
+
+async function doAnalyzeFiles() {
+  if (!uploadedFiles.length) return;
+  const btn = document.getElementById("btnAnalyzeFiles");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Analiza...';
+  hideAlert("fileAnalyzeAlert");
+  const docType = document.getElementById("fileDocTypeSelect").value || "declaratie";
+  const fd = new FormData();
+  uploadedFiles.forEach(f => fd.append("files", f));
+  fd.append("doc_type", docType);
+  fd.append("mode", currentFileMode);
+  try {
+    const r = await authFetch("/api/analyze-files", { method:"POST", body:fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail||r.statusText);
+    document.getElementById("fileRawText").textContent = d.raw_text || "(fara text)";
+    extractedData = d.extracted || {};
+    renderForm("fileForm", docType, extractedData);
+    document.getElementById("fileDropCard").style.display = "none";
+    document.getElementById("fileResultCard").style.display = "";
+  } catch(e) {
+    showAlert("fileAnalyzeAlert","err","Eroare analiza: "+e.message);
+  } finally {
+    btn.disabled=false; btn.innerHTML="&#129302; Analizeaza cu AI";
+  }
+}
+
+async function doGenerateFromFiles() {
+  const docType = document.getElementById("fileDocTypeSelect").value || "declaratie";
+  const schema  = FORM_SCHEMAS[docType] || [];
+  const data    = {};
+  schema.forEach(field => {
+    if (field.section) return;
+    const el = document.getElementById("fileForm_" + field.key);
+    if (el) data[field.key] = el.value;
+  });
+  const btn = document.getElementById("btnGenerateFromFiles");
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Se genereaza...';
+  hideAlert("fileGenerateAlert");
+  const fd = new FormData();
+  fd.append("template", docType);
+  fd.append("data", JSON.stringify(data));
+  fd.append("text_razvtat_ro", data["text_razvtat_ro"]||"");
+  try {
+    const r = await authFetch("/api/generate", { method:"POST", body:fd });
+    if (!r.ok) { const e=await r.json(); throw new Error(e.detail||r.statusText); }
+    const blob = await r.blob();
+    const cd   = r.headers.get("content-disposition")||"";
+    const fn   = (cd.match(/filename[^;=\n]*=([^;\n]*)/)?.[1] || (docType+".docx")).replace(/^["'\s]+|["'\s]+$/g,"");
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a"); a.href=url; a.download=fn; a.click();
+    URL.revokeObjectURL(url);
+    showAlert("fileGenerateAlert","ok","Document generat: "+fn);
+  } catch(e) {
+    showAlert("fileGenerateAlert","err","Eroare: "+e.message);
+  } finally {
+    btn.disabled=false; btn.innerHTML="&#11123; Genereaza document .docx";
+  }
+}
+
+function resetFiles() {
+  uploadedFiles=[];
+  document.getElementById("fileList").innerHTML="";
+  document.getElementById("btnAnalyzeFiles").disabled=true;
+  document.getElementById("fileResultCard").style.display="none";
+  document.getElementById("fileDropCard").style.display="";
+  hideAlert("fileAnalyzeAlert");
+  hideAlert("fileGenerateAlert");
+}
+
+/* === INIT === */
+window.addEventListener("load", async function() {
+  switchMode("voice");
+  renderMultiDocGrid();
+  // Fetch session info → header name + officer override dropdown
+  try {
+    const _r = await fetch("/api/status", {credentials:"same-origin"});
+    if (_r.ok) {
+      const _d = await _r.json();
+      const _el = document.getElementById("userDisplay");
+      if (_el && _d.user) { _el.textContent = _d.user; _el.title = _d.role || ""; }
+      const _vb = document.getElementById("versionBadge");
+      if (_vb && _d.version) _vb.textContent = "v"+_d.version;
+      if (_d.username) initOfficerSelect(_d.username);
+    }
+  } catch(_) {}
+});
+
+/* ══════════════════════════════════════════════════════
+   QUICK RECORD MODE
+══════════════════════════════════════════════════════ */
+const OFFICER_REGISTRY = {
+  "sandu.alexandru": { prenume:"Sandu",  nume:"Alexandru", role:"Ofiţer Superior Investigaţii Anti-Drog" },
+  "nikita.mocan":    { prenume:"Nikita", nume:"Mocan",     role:"Sub-Ofiţer Superior Investigaţii Sectorul 4" },
+  "dorin.ceban":     { prenume:"Dorin",  nume:"Ceban",     role:"Ofiţer de Investigaţii Anti-Drog" },
+  "daniel.rosca":    { prenume:"Daniel", nume:"Rosca",     role:"Şef pe practicanti" },
+  "lucian.martea":   { prenume:"Lucian", nume:"Martea",    role:"Ofiţer de Investigaţii - Inspectoratul Riscani" },
+};
+const DOC_NAMES_Q = {
+  plangere:"Plângere Penală",declaratie:"Declaraţie Victimă",
+  proces_verbal:"Proces-Verbal Sesizare",nota_explicativa:"Notă Explicativă",
+  sesizare_penala:"Sesizare Penală",raport_go:"Raport GO / Apel 112",
+  raport_pierdere:"Raport Pierdere",raport_droguri:"Raport Droguri",
+  raport_transmitere:"Raport Transmitere",raport_cautare:"Raport Căutare Persoană",
+  nota_informativa:"Notă Informativă",interpelare:"Interpelare",
+  prelungire_termen:"Prelungire Termen",decizie_clasare:"Decizie Clasare",
+  incheiere:"Încheiere",
+};
+
+let _qMediaRec=null, _qChunks=[], _qIsRec=false;
+let _qTimer=null, _qElapsed=0, _qRecId=null;
+let _customOfficerName="";
+
+function getActiveOfficer() {
+  const sel = document.getElementById("officerSelect");
+  if (!sel) return { prenume:"", nume:"", role:"" };
+  if (sel.value === "__custom__") {
+    const parts = _customOfficerName.trim().split(/\s+/);
+    return { prenume: parts[0]||"", nume: parts.slice(1).join(" ")||"", role:"Ofiţer" };
+  }
+  return OFFICER_REGISTRY[sel.value] || { prenume:"", nume:"", role:"" };
+}
+
+function onOfficerSelect(sel) {
+  const custom = document.getElementById("officerCustomInput");
+  const roleEl = document.getElementById("officerRoleSpan");
+  if (sel.value === "__custom__") {
+    custom.style.display = "";
+    roleEl.textContent = "";
+  } else {
+    custom.style.display = "none";
+    const info = OFFICER_REGISTRY[sel.value];
+    roleEl.textContent = info ? info.role : "";
+  }
+}
+
+function initOfficerSelect(username) {
+  const sel = document.getElementById("officerSelect");
+  if (!sel || !username) return;
+  const key = username.replace(".", ".");  // already dotted
+  if (OFFICER_REGISTRY[key]) {
+    sel.value = key;
+    document.getElementById("officerRoleSpan").textContent = OFFICER_REGISTRY[key].role;
+  }
+}
+
+/* Inventory */
+function invChange(cb) {
+  cb.closest(".inv-card").classList.toggle("inv-selected", cb.checked);
+  updateInvFooter();
+}
+
+function updateInvFooter() {
+  const sel = getSelectedDocTypes();
+  const footer = document.getElementById("invFooter");
+  const countEl = document.getElementById("quickSelCount");
+  const genBar = document.getElementById("quickGenBar");
+  const hasT = (document.getElementById("quickTranscript")?.value||"").trim().length > 10;
+  if (!sel.length) {
+    if (footer) footer.textContent = hasT ? "Selectaţi documentele dorite" : "Selectaţi documentele dorite";
+    if (countEl) countEl.textContent = "0";
+    if (genBar) genBar.style.display = "none";
+  } else {
+    if (footer) footer.innerHTML = "✓ Selectate: <b>"+sel.length+"</b> — "+sel.map(v=>DOC_NAMES_Q[v]||v).join(", ");
+    if (countEl) countEl.textContent = sel.length;
+    if (genBar) genBar.style.display = hasT ? "" : "none";
+  }
+}
+
+function getSelectedDocTypes() {
+  return Array.from(document.querySelectorAll(".inv-card input[type=checkbox]:checked")).map(cb=>cb.value);
+}
+
+/* Recording */
+async function toggleQuickRecord() {
+  if (_qIsRec) stopQRec(); else await startQRec();
+}
+
+async function startQRec() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      document.getElementById("quickRecStatus").textContent =
+        "Eroare: browserul nu permite accesul la microfon pe HTTP. " +
+        "Accesati aplicatia prin localhost sau adauga-o la exceptii HTTPS.";
+      return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    _qChunks = [];
+    const opts = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? {mimeType:"audio/webm;codecs=opus"} : {};
+    _qMediaRec = new MediaRecorder(stream, opts);
+    _qMediaRec.ondataavailable = e => { if (e.data.size>0) _qChunks.push(e.data); };
+    _qMediaRec.onstop = handleQStop;
+    _qMediaRec.start(250);
+    _qIsRec = true;
+    const btn = document.getElementById("quickRecBtn");
+    btn.classList.add("recording"); btn.innerHTML = `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="24" height="24" rx="4" fill="white" opacity="0.92"/></svg>`;
+    document.getElementById("quickRecStatus").textContent = "Înregistrare în curs...";
+    _qElapsed = 0;
+    const timerEl = document.getElementById("quickTimer");
+    timerEl.style.display = ""; timerEl.textContent = "00:00";
+    _qTimer = setInterval(()=>{
+      _qElapsed++;
+      const m=String(Math.floor(_qElapsed/60)).padStart(2,"0");
+      const s=String(_qElapsed%60).padStart(2,"0");
+      timerEl.textContent = m+":"+s;
+    }, 1000);
+  } catch(e) {
+    document.getElementById("quickRecStatus").textContent = "Eroare microfon: "+e.message;
+  }
+}
+
+function stopQRec() {
+  clearInterval(_qTimer);
+  _qMediaRec?.stream?.getTracks().forEach(t=>t.stop());
+  _qMediaRec?.stop();
+  _qIsRec = false;
+  const btn = document.getElementById("quickRecBtn");
+  btn.classList.remove("recording"); btn.innerHTML = "⏳"; btn.disabled = true;
+  document.getElementById("quickRecStatus").textContent = "Se procesează...";
+}
+
+async function handleQStop() {
+  const blob = new Blob(_qChunks, { type: _qChunks[0]?.type||"audio/webm" });
+  const lang = document.querySelector(".lang-btn.active")?.dataset.lang || "ro";
+  const fd = new FormData();
+  fd.append("audio", blob, "recording.webm");
+  fd.append("language", lang);
+  try {
+    const res = await authFetch("/api/transcribe", { method:"POST", body:fd });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    _qRecId = data.rec_id;
+    document.getElementById("quickTranscript").value = data.transcript||"";
+    document.getElementById("quickTranscriptWrap").style.display = "";
+    document.getElementById("quickTimer").style.display = "none";
+    document.getElementById("quickRecStatus").textContent = "Transcriere finalizată. Selectaţi documentele, apoi generaţi.";
+    // Reveal inventory now that we have a transcript
+    const _inv = document.getElementById("quickInventoryPanel");
+    if (_inv) _inv.style.display = "";
+    const btn = document.getElementById("quickRecBtn");
+    btn.disabled=false; btn.innerHTML=`<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="18" y="4" width="16" height="26" rx="8" fill="white" opacity="0.9"/><path d="M10 26c0 8.837 7.163 16 16 16s16-7.163 16-16" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9"/><line x1="26" y1="42" x2="26" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/><line x1="18" y1="48" x2="34" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/></svg>`; btn.title="Reînregistrare (înlocuieşte transcrierea)";
+    updateInvFooter();
+  } catch(e) {
+    document.getElementById("quickRecStatus").textContent = "Eroare: "+e.message;
+    const btn = document.getElementById("quickRecBtn");
+    btn.disabled=false; btn.innerHTML=`<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="18" y="4" width="16" height="26" rx="8" fill="white" opacity="0.9"/><path d="M10 26c0 8.837 7.163 16 16 16s16-7.163 16-16" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9"/><line x1="26" y1="42" x2="26" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/><line x1="18" y1="48" x2="34" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/></svg>`;
+  }
+}
+
+/* Generate all selected docs */
+async function doQuickGenerate() {
+  const docTypes = getSelectedDocTypes();
+  if (!docTypes.length) { alert("Selectaţi cel puţin un tip de document."); return; }
+  const transcript = (document.getElementById("quickTranscript")?.value||"").trim();
+  if (!transcript) { alert("Transcrierea este goală."); return; }
+
+  document.getElementById("genResultsSection").style.display = "";
+  const tbody = document.getElementById("genTableBody");
+  const officer = getActiveOfficer();
+  const officerFull = (officer.prenume+" "+officer.nume).trim();
+
+  docTypes.forEach((dt,i) => {
+    if (document.getElementById("qrow-"+dt)) return;
+    const tr = document.createElement("tr");
+    tr.id = "qrow-"+dt;
+    tr.innerHTML = "<td style='color:var(--text3)'>"+(tbody.querySelectorAll("tr").length+1)+"</td>"
+      +"<td><b>"+(DOC_NAMES_Q[dt]||dt)+"</b></td>"
+      +"<td style='font-size:.76rem;color:var(--text2)'>"+officerFull+"</td>"
+      +"<td><span class='q-badge q-badge-spin' id='qbadge-"+dt+"'>⏳ Procesare...</span></td>"
+      +"<td id='qdl-"+dt+"'>—</td>";
+    tbody.appendChild(tr);
+  });
+  document.getElementById("genResultsSection").scrollIntoView({behavior:"smooth",block:"start"});
+
+  for (const dt of docTypes) {
+    const badge = document.getElementById("qbadge-"+dt);
+    const dlCell = document.getElementById("qdl-"+dt);
+    try {
+      if (badge) { badge.className="q-badge q-badge-spin"; badge.textContent="⏳ Extragere date..."; }
+      const exFd = new FormData();
+      exFd.append("transcript", transcript);
+      exFd.append("doc_type", dt);
+      const exRes = await authFetch("/api/extract", {method:"POST",body:exFd});
+      if (!exRes.ok) throw new Error("Extragere "+exRes.status);
+      const exData = await exRes.json();
+      // Inject officer fields
+      exData.ofiters_prenume = officer.prenume;
+      exData.ofiters_nume    = officer.nume;
+
+      if (badge) { badge.className="q-badge q-badge-spin"; badge.textContent="⏳ Generare..."; }
+      const genFd = new FormData();
+      genFd.append("template", dt);
+      genFd.append("data", JSON.stringify(exData));
+      if (_qRecId) genFd.append("rec_id", _qRecId);
+      const genRes = await authFetch("/api/generate", {method:"POST",body:genFd});
+      if (!genRes.ok) throw new Error("Generare "+genRes.status);
+      const blobDoc = await genRes.blob();
+      const url = URL.createObjectURL(blobDoc);
+      const fname = (DOC_NAMES_Q[dt]||dt)+"_"+new Date().toISOString().slice(0,10)+".docx";
+      if (badge) { badge.className="q-badge q-badge-ok"; badge.textContent="✓ Gata"; }
+      if (dlCell) dlCell.innerHTML="<a href='"+url+"' download='"+fname+"' class='btn btn-success' style='font-size:.74rem;padding:4px 10px'>⬇ Descarcă</a>";
+    } catch(e) {
+      if (badge) { badge.className="q-badge q-badge-err"; badge.textContent="✗ Eroare"; }
+      if (dlCell) dlCell.innerHTML="<span style='color:#ef4444;font-size:.74rem'>"+e.message+"</span>";
+    }
+  }
+}
+
+function showAddMoreDoc() {
+  const panel = document.getElementById("addMoreDocPanel");
+  panel.style.display = panel.style.display==="none" ? "" : "none";
+  if (panel.style.display === "") {
+    const done = new Set(Array.from(document.querySelectorAll("#genTableBody tr")).map(tr=>tr.id.replace(/^qrow-/,"").replace(/-\d+$/,"")));
+    const cards = document.getElementById("addMoreDocCards");
+    cards.innerHTML = "";
+    Object.entries(DOC_NAMES_Q).forEach(([val,name]) => {
+      if (done.has(val)) return;
+      const btn = document.createElement("button");
+      btn.className="btn btn-outline";
+      btn.style.cssText="font-size:.74rem;padding:4px 9px";
+      btn.textContent=name;
+      btn.onclick=()=>generateExtraDoc(val);
+      cards.appendChild(btn);
+    });
+    if (!cards.children.length) cards.innerHTML="<span style='color:var(--text3);font-size:.79rem'>Toate documentele disponibile au fost generate.</span>";
+  }
+}
+
+async function generateExtraDoc(dt) {
+  const transcript = (document.getElementById("quickTranscript")?.value||"").trim();
+  if (!transcript) return;
+  document.getElementById("addMoreDocPanel").style.display="none";
+  const officer = getActiveOfficer();
+  const officerFull = (officer.prenume+" "+officer.nume).trim();
+  const tbody = document.getElementById("genTableBody");
+  const uid = Date.now();
+  const rowId="qrow-"+dt+"-"+uid, badgeId="qbadge-"+uid, dlId="qdl-"+uid;
+  const tr = document.createElement("tr");
+  tr.id=rowId;
+  tr.innerHTML="<td style='color:var(--text3)'>"+(tbody.querySelectorAll("tr").length+1)+"</td>"
+    +"<td><b>"+(DOC_NAMES_Q[dt]||dt)+"</b></td>"
+    +"<td style='font-size:.76rem;color:var(--text2)'>"+officerFull+"</td>"
+    +"<td><span class='q-badge q-badge-spin' id='"+badgeId+"'>⏳ Procesare...</span></td>"
+    +"<td id='"+dlId+"'>—</td>";
+  tbody.appendChild(tr);
+  const badge=document.getElementById(badgeId), dlCell=document.getElementById(dlId);
+  try {
+    const exFd=new FormData(); exFd.append("transcript",transcript); exFd.append("doc_type",dt);
+    const exRes=await authFetch("/api/extract",{method:"POST",body:exFd});
+    if (!exRes.ok) throw new Error("Extragere "+exRes.status);
+    const exData=await exRes.json();
+    exData.ofiters_prenume=officer.prenume; exData.ofiters_nume=officer.nume;
+    if (badge){badge.className="q-badge q-badge-spin";badge.textContent="⏳ Generare...";}
+    const genFd=new FormData(); genFd.append("template",dt); genFd.append("data",JSON.stringify(exData));
+    if (_qRecId) genFd.append("rec_id",_qRecId);
+    const genRes=await authFetch("/api/generate",{method:"POST",body:genFd});
+    if (!genRes.ok) throw new Error("Generare "+genRes.status);
+    const blobDoc=await genRes.blob();
+    const url=URL.createObjectURL(blobDoc);
+    const fname=(DOC_NAMES_Q[dt]||dt)+"_"+new Date().toISOString().slice(0,10)+".docx";
+    if (badge){badge.className="q-badge q-badge-ok";badge.textContent="✓ Gata";}
+    if (dlCell) dlCell.innerHTML="<a href='"+url+"' download='"+fname+"' class='btn btn-success' style='font-size:.74rem;padding:4px 10px'>⬇ Descarcă</a>";
+  } catch(e) {
+    if (badge){badge.className="q-badge q-badge-err";badge.textContent="✗ Eroare";}
+    if (dlCell) dlCell.innerHTML="<span style='color:#ef4444;font-size:.74rem'>"+e.message+"</span>";
+  }
+}
+
+function resetQuickMode() {
+  _qIsRec=false; _qRecId=null; clearInterval(_qTimer);
+  const btn=document.getElementById("quickRecBtn");
+  if (btn){btn.innerHTML=`<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="18" y="4" width="16" height="26" rx="8" fill="white" opacity="0.9"/><path d="M10 26c0 8.837 7.163 16 16 16s16-7.163 16-16" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9"/><line x1="26" y1="42" x2="26" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/><line x1="18" y1="48" x2="34" y2="48" stroke="white" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/></svg>`;btn.classList.remove("recording");btn.disabled=false;btn.title="Apăsaţi pentru a înregistra";}
+  const status=document.getElementById("quickRecStatus");
+  if (status) status.textContent="Apăsaţi pentru a înregistra";
+  const timer=document.getElementById("quickTimer");
+  if (timer){timer.style.display="none";timer.textContent="00:00";}
+  const tw=document.getElementById("quickTranscriptWrap");
+  if (tw) tw.style.display="none";
+  const qt=document.getElementById("quickTranscript");
+  if (qt) qt.value="";
+  const gr=document.get
